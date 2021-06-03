@@ -1,0 +1,28 @@
+[package]
+version = "0.1.0"
+name = "try_in_browser"
+repository = "https://github.com/Bubbler-4/TryInBrowser"
+authors = ["Bubbler-4 <bubbler9903@gmail.com>"]
+description = "Online interpreter that works even if you go offline"
+categories = ["web", "interpreter"]
+license = "MIT"
+readme = "./README.md"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.12"
+
+[dependencies]
+seed = "0.8.0"
+lazy_static = "1.4"
+
+[profile.release]
+lto = true
+opt-level = 'z'
+codegen-units = 1
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-Os']

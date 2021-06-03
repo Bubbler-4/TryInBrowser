@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Scratch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <style>
+        @font-face {
+            font-display: swap;
+            font-family: 'DejaVu Sans Mono';
+            font-style: normal;
+            font-weight: 400;
+            src:
+                url(/DejaVuSansMono.woff2) format('woff2'),
+                url(/DejaVuSansMono.woff) format('woff');
+        }
+        * {
+            font-family: "DejaVu Sans Mono", monospace;
+        }
+        body {
+            font-size: 16px;
+            overflow-x: hidden;
+            overflow-y: scroll;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        main {
+            flex: 1 0 auto;
+        }
+        main, footer {
+            margin: 2vh 15vw;
+        }
+        footer {
+            padding-bottom: 1.5em;
+        }
+        textarea {
+            display: block;
+            resize: none;
+            font-size: 100%;
+        }
+        button {
+            background-color: #42d9ff;
+            color: black;
+            border: none;
+            outline: none;
+            font-size: 120%;
+            padding: 0.5em;
+        }
+        button:disabled {
+            background-color: #a9eeff;
+            color: #888;
+        }
+        #langs {
+            column-width: 192px;
+            -moz-column-width: 192px;
+            padding: 8px 0;
+        }
+        #langs div {
+            line-height: 32px;
+            overflow: hidden;
+            padding: 0 8px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #langs div.active {
+            background-color: #64e752;
+        }
+        #langs div.inactive {
+            background-color: #b6f1af;
+        }
+        #langs div.disabled {
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+    <main id="app">Please wait while the interpreters are loading...</main>
+    <footer>Made by Bubbler. Shamelessly stolen certain HTML and CSS fragments from <a href="https://tio.run/">Try it online!</a> and <a href="https://interp.hyper-neutrino.xyz/">another online interpreter</a>.</footer>
+    <script type="module">
+        import init from '/pkg/package.js';
+        init('/pkg/package_bg.wasm');
+    </script>
+</body>
+
+</html>
