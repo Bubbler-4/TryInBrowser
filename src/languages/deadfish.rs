@@ -4,7 +4,6 @@ use super::lang_trait::Language;
 enum OutputMode {
     Num,
     Char,
-    Help,
 }
 
 pub struct Deadfish {
@@ -35,26 +34,18 @@ Accepted arguments:
 
 impl Language for Deadfish {
     fn init(&mut self, code: &str, _input: &str, args: &str) {
-        if args == "-h" {
-            self.code.clear();
-            self.idx = 0;
-            self.output_mode = OutputMode::Help;
+        self.code.clear();
+        self.code.extend_from_slice(code.as_bytes());
+        self.idx = 0;
+        self.output_mode = if args == "-o" {
+            OutputMode::Char
         } else {
-            self.code.clear();
-            self.code.extend_from_slice(code.as_bytes());
-            self.idx = 0;
-            self.output_mode = if args == "-o" {
-                OutputMode::Char
-            } else {
-                OutputMode::Num
-            };
-        }
+            OutputMode::Num
+        };
         self.counter = 0;
     }
     fn step(&mut self) -> (String, String, bool) {
-        if self.output_mode == OutputMode::Help {
-            (HELP.trim().to_string(), "".to_string(), false)
-        } else if self.idx >= self.code.len() {
+        if self.idx >= self.code.len() {
             ("".to_string(), "".to_string(), false)
         } else {
             let cmd = self.code[self.idx];
@@ -97,5 +88,11 @@ impl Language for Deadfish {
                 ("".to_string(), "".to_string(), true)
             }
         }
+    }
+    fn homepage(&self) -> &'static str {
+        "https://esolangs.org/wiki/Deadfish"
+    }
+    fn help(&self) -> &'static str {
+        HELP.trim()
     }
 }

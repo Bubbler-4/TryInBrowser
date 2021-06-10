@@ -73,4 +73,10 @@ impl LangContext {
         log!(delta, steps);
         self.step_many(steps)
     }
+    pub fn help(&self) -> &'static str {
+        self.lang.help()
+    }
+    pub fn homepage(&self) -> &'static str {
+        self.lang.homepage()
+    }
 }
