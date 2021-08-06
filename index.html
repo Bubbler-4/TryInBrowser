@@ -85,8 +85,12 @@
     <main id="app">Please wait while the interpreters are loading...</main>
     <footer>Made by Bubbler. Shamelessly stolen certain HTML and CSS fragments from <a href="https://tio.run/">Try it online!</a> and <a href="https://interp.hyper-neutrino.xyz/">another online interpreter</a>.</footer>
     <script type="module">
-        import init from './pkg/package.js';
-        init('./pkg/package_bg.wasm');
+        //import init from '/pkg/package.js';
+        //init('/pkg/package_bg.wasm');
+    </script>
+    <script src="./pkg/package.js"></script>
+    <script>
+        wasm_bindgen('./pkg/package_bg.wasm').then(_ => wasm_bindgen.start());
     </script>
 </body>
 

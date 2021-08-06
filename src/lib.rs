@@ -1,18 +1,23 @@
 #![allow(clippy::wildcard_imports)]
-#![allow(clippy::cast_possible_truncation)]
 
-mod languages;
-use languages::{LangContext, LANGS};
+mod runner;
+mod lang;
+mod thread;
 
 use seed::{prelude::*, *};
+use thread::prelude::OUT_LIMIT;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
+use indoc::indoc;
+use web_sys::window;
 
 fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.after_next_render(Msg::Rendered);
+    runner::runner_init();
+    let languages_list = lang::lang_name_list();
     let lang = url
         .next_hash_path_part()
-        .map_or_else(|| LANGS[0].to_string(), b64_to_string);
+        .map_or_else(|| languages_list[0].to_string(), b64_to_string);
     log!(lang);
     let code = url
         .next_hash_path_part()
@@ -26,19 +31,19 @@ fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
         .next_hash_path_part()
         .map_or_else(|| "".to_string(), b64_to_string);
     log!(args);
-    let context = LangContext::init(&lang, &code, &stdin, &args);
     Model {
-        url,
+        spinner: 0,
+        thread_ready: false,
+        thread_running: false,
+        stdout: String::with_capacity(OUT_LIMIT),
+        stderr: String::with_capacity(OUT_LIMIT+100),
         lang,
         code,
         stdin,
         args,
-        stdout: "".to_string(),
-        stderr: "".to_string(),
-        is_running: false,
         languages_shown: true,
-        running_text: String::default(),
-        context,
+        languages_list,
+        url,
     }
 }
 
@@ -50,27 +55,28 @@ fn b64_to_string(s: &str) -> String {
 }
 
 struct Model {
-    url: Url,
+    spinner: i32,
+    thread_ready: bool,
+    thread_running: bool,
+    stdout: String,
+    stderr: String,
     lang: String,
     code: String,
     stdin: String,
     args: String,
-    stdout: String,
-    stderr: String,
-    is_running: bool,
     languages_shown: bool,
-    running_text: String,
-    context: LangContext,
+    languages_list: Vec<&'static str>,
+    url: Url,
 }
 
 enum Msg {
     Rendered(RenderInfo),
+    Stop,
+    Run,
     LangSet(String),
     CodeUpdate(String),
     StdinUpdate(String),
     ArgsUpdate(String),
-    Run,
-    Stop,
     LangListToggle,
     Linkify,
     Postify,
@@ -78,24 +84,59 @@ enum Msg {
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::Rendered(ri) => {
-            let delta = ri.timestamp_delta.unwrap_or_default();
-            if model.is_running {
-                let ctx = &mut model.context;
-                let (out, err, running) = ctx.step_adaptive(delta);
-                model.stdout += &out;
-                model.stderr += &err;
-                model.is_running = running;
-                if running {
-                    model.running_text += ".";
-                    if model.running_text.len() > 15 {
-                        model.running_text.truncate(8);
-                    }
+        Msg::Rendered(_) => {
+            model.spinner += 1;
+            if !model.thread_ready {
+                model.thread_ready = runner::poll_mt_init();
+            }
+            if model.thread_running {
+                let finished = runner::get_th_finished();
+                let (out, err) = runner::take_result_from_thread();
+                let stdout_overflown = model.stdout.len() + out.len() > OUT_LIMIT;
+                let stderr_overflown = model.stderr.len() + err.len() > OUT_LIMIT;
+                let overflown = stdout_overflown || stderr_overflown;
+                if stdout_overflown {
+                    model.stdout.push_str(&out[..OUT_LIMIT - model.stdout.len()]);
                 } else {
-                    model.running_text = "Finished.".to_string();
+                    model.stdout.push_str(&out);
+                }
+                if stderr_overflown {
+                    model.stderr.push_str(&err[..OUT_LIMIT - model.stderr.len()]);
+                } else {
+                    model.stderr.push_str(&err);
+                }
+                if overflown {
+                    runner::reset();
+                }
+                let crashed = runner::get_th_crashed() || overflown;
+                model.thread_running = !crashed && !finished;
+                if crashed || finished {
+                    model.stderr += &format!("\n\nElapsed time: {:.3} sec", runner::get_elapsed_time());
+                }
+                if crashed {
+                    model.thread_ready = false;
+                    model.stderr += if overflown { "\noutput limit exceeded" } else { "\ninterpreter crashed" };
+                } else if finished {
+                    model.stderr += "\nfinished";
                 }
             }
             orders.after_next_render(Msg::Rendered);
+        }
+        Msg::Run => {
+            log!("Run clicked");
+            runner::reset_all_flags();
+            model.thread_running = true;
+            model.stdout.clear();
+            model.stderr.clear();
+            runner::run(&model.lang, &model.code, &model.stdin, &model.args);
+        }
+        Msg::Stop => {
+            log!("Stop clicked");
+            model.thread_ready = true;
+            model.thread_running = false;
+            model.stderr += &format!("\n\nElapsed time: {:.3} sec", runner::get_elapsed_time());
+            model.stderr += "\naborted";
+            runner::reset();
         }
         Msg::LangSet(s) => {
             log!("Language set to", &s);
@@ -105,29 +146,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::CodeUpdate(s) => model.code = s,
         Msg::StdinUpdate(s) => model.stdin = s,
         Msg::ArgsUpdate(s) => model.args = s,
-        Msg::Run => {
-            log!("Run clicked");
-            if &model.args == "-h" {
-                model.is_running = false;
-                model.context = LangContext::init(&model.lang, "", "", "");
-                model.stdout.clear();
-                model.stdout += model.context.help();
-                model.stderr.clear();
-                model.running_text.clear();
-            } else {
-                model.is_running = true;
-                model.stdout.clear();
-                model.stderr.clear();
-                model.running_text = "Running.".to_string();
-                model.context =
-                    LangContext::init(&model.lang, &model.code, &model.stdin, &model.args);
-            }
-        }
-        Msg::Stop => {
-            log!("Stop clicked");
-            model.is_running = false;
-            model.running_text = "Stopped.".to_string();
-        }
         Msg::LangListToggle => {
             model.languages_shown = !model.languages_shown;
         }
@@ -139,7 +157,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 &model.stdin,
                 &model.args,
             );
-            model.running_text.clear();
+            //model.running_text.clear();
             model.stdout.clear();
             model.stdout += "https://bubbler-4.github.io/TryInBrowser/#";
             model.stdout += model.url.hash().unwrap_or(&"".to_string());
@@ -153,15 +171,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 &model.stdin,
                 &model.args,
             );
-            model.running_text.clear();
+            //model.running_text.clear();
             model.stdout.clear();
             model.stdout += &model.url.to_string();
+            let homepage = lang::get_homepage(&model.lang).unwrap_or("");
             model.stdout = format_post(
                 &model.lang,
                 &model.code,
                 &model.stdin,
                 &model.args,
-                model.context.homepage(),
+                homepage,
                 &model.url,
             );
             model.stderr.clear();
@@ -186,20 +205,23 @@ fn format_post(
     hasher.write_u8(0);
     hasher.write(args.as_bytes());
     let hash = hasher.finish();
-    format!(
-        r#"# [{0}][tib-{0}], {1} bytes
+    let selection = get_selection();
+    let display_code: &str = selection.as_ref().map_or(code, |s| if s == "" { code } else { s });
+    format!(indoc!(r#"
+        # [{0}][tib-{0}], {1} byte{2}
 
-```
-{2}
-```
+        ```
+        {3}
+        ```
 
-[Try in browser!][tib-{3:016x}]
-
-[tib-{0}]: {4}
-[tib-{3:016x}]: https://bubbler-4.github.io/TryInBrowser/#{5}"#,
+        [Try in browser!][tib-{4:016x}]
+        [tib-{0}]: {5}
+        [tib-{4:016x}]: https://bubbler-4.github.io/TryInBrowser/#{6}
+        "#),
         lang,
-        code.len(),
-        code,
+        display_code.len(),
+        if display_code.len() == 1 { "" } else { "s" },
+        display_code,
         hash,
         lang_link,
         url.hash().unwrap_or(&"".to_string())
@@ -216,9 +238,18 @@ fn update_url(url: Url, lang: &str, code: &str, input: &str, args: &str) -> Url 
     url
 }
 
+fn get_selection() -> Option<String> {
+    let window = window();
+    let selection = window.and_then(|w| w.get_selection().ok()).flatten();
+    let s: Option<String> = selection.map(|s| s.to_string().into());
+    s
+}
+
 fn view(model: &Model) -> Node<Msg> {
     div![
-        id!("main"),
+        "UI health: ", ".".repeat(model.spinner as usize / 10 % 10),
+        br![], br![],
+        
         b!["Languages"],
         span![
             if model.languages_shown {
@@ -231,11 +262,12 @@ fn view(model: &Model) -> Node<Msg> {
         br![],
         IF!(model.languages_shown => div![
             id!("langs"),
-            LANGS.iter().map(|s| {
+            model.languages_list.iter().map(|s| {
+                let s_clone = s.to_string();
                 div![
-                    C![IF!(&model.lang == s => "active"), IF!(&model.lang != s => "inactive"), IF!(model.is_running => "disabled")],
+                    C![IF!(&model.lang == s => "active"), IF!(&model.lang != s => "inactive"), IF!(model.thread_running => "disabled")],
                     s,
-                    IF!(!model.is_running => ev(Ev::Click, move |_| Msg::LangSet((*s).to_string())))
+                    IF!(!model.thread_running => ev(Ev::Click, move |_| Msg::LangSet(s_clone)))
                 ]
             })
         ]),
@@ -263,32 +295,30 @@ fn view(model: &Model) -> Node<Msg> {
         br![],
         button![
             id!("run"),
-            attrs! {At::Disabled => model.is_running.as_at_value()},
+            attrs!{ At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
             "Run",
             ev(Ev::Click, |_| Msg::Run)
         ],
         button![
             id!("stop"),
-            attrs! {At::Disabled => (!model.is_running).as_at_value()},
+            attrs!{ At::Disabled => (!model.thread_ready || !model.thread_running).as_at_value() },
             "Stop",
             ev(Ev::Click, |_| Msg::Stop)
         ],
-        &model.running_text,
         br![],
         button![
             id!("linkify"),
-            attrs! {At::Disabled => model.is_running.as_at_value()},
+            attrs! {At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
             "Linkify",
             ev(Ev::Click, |_| Msg::Linkify)
         ],
         button![
             id!("postify"),
-            attrs! {At::Disabled => model.is_running.as_at_value()},
+            attrs! {At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
             "Postify",
             ev(Ev::Click, |_| Msg::Postify)
         ],
-        br![],
-        br![],
+        br![], br![],
         b!["Output"],
         textarea![
             id!("stdout"),
@@ -311,7 +341,7 @@ fn rows(s: &str, min_rows: usize) -> usize {
         .max(min_rows)
 }
 
-#[wasm_bindgen(start)]
+#[wasm_bindgen]
 pub fn start() {
     App::start("app", init, update, view);
 }
