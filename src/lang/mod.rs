@@ -1,6 +1,7 @@
 mod deadfish;
 mod example_lang;
 mod s10k;
+mod brainfuck;
 
 pub fn lang_name_list() -> Vec<&'static str> {
     let mut names = vec![s10k::NAME, deadfish::NAME];
@@ -16,6 +17,7 @@ fn get_help(lang_name: &str) -> Option<&'static str> {
         example_lang::NAME => Some(example_lang::HELP),
         s10k::NAME => Some(s10k::HELP),
         deadfish::NAME => Some(deadfish::HELP),
+        brainfuck::NAME => Some(brainfuck::HELP),
         _ => None,
     }
 }
@@ -53,6 +55,7 @@ pub fn interpret<T: LangWriter>(lang: &str, pgm: &str, input: &str, args: &str, 
         example_lang::NAME => example_lang::interpret(pgm, input, args, writer),
         s10k::NAME => s10k::interpret(pgm, input, args, writer),
         deadfish::NAME => deadfish::interpret(pgm, input, args, writer),
+        brainfuck::NAME => brainfuck::interpret(pgm, input, args, writer),
         _ => {
             let err = format!("Unknown lang: {}", lang);
             writer.write_err(&err);
