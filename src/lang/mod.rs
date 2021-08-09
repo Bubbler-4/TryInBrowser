@@ -4,7 +4,7 @@ mod s10k;
 mod brainfuck;
 
 pub fn lang_name_list() -> Vec<&'static str> {
-    let mut names = vec![s10k::NAME, deadfish::NAME];
+    let mut names = vec![s10k::NAME, deadfish::NAME, brainfuck::NAME];
     names.sort_unstable();
     if cfg!(feature = "ui_debug") {
         names.push(example_lang::NAME);
