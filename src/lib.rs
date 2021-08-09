@@ -111,7 +111,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 let crashed = runner::get_th_crashed() || overflown;
                 model.thread_running = !crashed && !finished;
                 if crashed || finished {
-                    model.stderr += &format!("\n\nElapsed time: {:.3} sec", runner::get_elapsed_time());
+                    model.stderr += &format!("\n\nElapsed time: {:.6} sec", runner::get_elapsed_time());
                 }
                 if crashed {
                     model.thread_ready = false;
@@ -134,7 +134,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("Stop clicked");
             model.thread_ready = true;
             model.thread_running = false;
-            model.stderr += &format!("\n\nElapsed time: {:.3} sec", runner::get_elapsed_time());
+            model.stderr += &format!("\n\nElapsed time: {:.6} sec", runner::get_elapsed_time());
             model.stderr += "\naborted";
             runner::reset();
         }
@@ -216,7 +216,7 @@ fn format_post(
 
         [Try in browser!][tib-{4:016x}]
         [tib-{0}]: {5}
-        [tib-{4:016x}]: https://bubbler-4.github.io/TryInBrowser/#{6}
+        [tib-{4:016x}]: https://try-in-browser.netlify.app/#{6}
         "#),
         lang,
         display_code.len(),
