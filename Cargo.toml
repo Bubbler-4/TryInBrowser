@@ -44,4 +44,4 @@ opt-level = 'z'
 codegen-units = 1
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-Os']
+wasm-opt = false
