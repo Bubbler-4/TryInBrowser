@@ -1,10 +1,10 @@
-use super::prelude::*;
-use std::cell::RefCell;
-use wasm_bindgen::prelude::*;
-use js_sys::{Array, ArrayBuffer, Object, Reflect};
-use web_sys::{Blob, BlobPropertyBag, Url};
 use super::atw::Thread as AtwThread;
 use super::encode_task_msg;
+use super::prelude::*;
+use js_sys::{Array, ArrayBuffer, Object, Reflect};
+use std::cell::RefCell;
+use wasm_bindgen::prelude::*;
+use web_sys::{Blob, BlobPropertyBag, Url};
 
 type ResultJJ = Result<JsValue, JsValue>;
 
@@ -21,9 +21,10 @@ impl Thread {
         //   return URL.createObjectURL(
         //     new Blob([content], {type: 'text/javascript'}));
         let blob = Blob::new_with_str_sequence_and_options(
-                &Array::of1(&JsValue::from(content)),
-                BlobPropertyBag::new().type_("text/javascript"))
-            .unwrap();
+            &Array::of1(&JsValue::from(content)),
+            BlobPropertyBag::new().type_("text/javascript"),
+        )
+        .unwrap();
 
         Url::create_object_url_with_blob(&blob).unwrap()
     }
@@ -83,8 +84,10 @@ impl Thread {
         Reflect::set(payload.as_ref(), &JsValue::from("abInit"), &ab_init).unwrap();
         Reflect::set(payload.as_ref(), &JsValue::from("abWasm"), &ab_wasm).unwrap();
 
-        let result = self.atw_th.send_request(
-            &payload, Some(&Array::of2(&ab_init, &ab_wasm))).await;
+        let result = self
+            .atw_th
+            .send_request(&payload, Some(&Array::of2(&ab_init, &ab_wasm)))
+            .await;
         let result = match result {
             Ok(jsv) => format!("ok: {}", jsv.as_string().unwrap()),
             Err(jsv) => format!("err: {}", jsv.as_string().unwrap()),

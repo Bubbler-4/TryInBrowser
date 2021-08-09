@@ -1,8 +1,8 @@
+use js_sys::Date;
+use seed::log;
 use thread::prelude::*;
 use thread::Thread;
 use wasm_bindgen_futures::spawn_local;
-use seed::log;
-use js_sys::Date;
 use web_sys::window;
 
 use crate::thread;
@@ -34,9 +34,7 @@ fn set_mt(mt: WasmMt) {
 }
 
 fn get_mt() -> Option<&'static WasmMt> {
-    unsafe {
-        STATE.mt.as_ref()
-    }
+    unsafe { STATE.mt.as_ref() }
 }
 
 fn reset_thread() {
@@ -52,9 +50,7 @@ fn set_thread(th: Thread) {
 }
 
 fn get_thread() -> Option<&'static Thread> {
-    unsafe {
-        STATE.thread.as_ref()
-    }
+    unsafe { STATE.thread.as_ref() }
 }
 
 fn set_th_init(b: bool) {
@@ -64,9 +60,7 @@ fn set_th_init(b: bool) {
 }
 
 fn get_th_init() -> bool {
-    unsafe {
-        STATE.th_init
-    }
+    unsafe { STATE.th_init }
 }
 
 fn set_th_finished(b: bool) {
@@ -121,13 +115,17 @@ fn set_result(s1: String, s2: String) {
 
 fn set_start_time() {
     unsafe {
-        STATE.start_time = window().and_then(|w| w.performance()).map_or(Date::now(), |p| p.now());
+        STATE.start_time = window()
+            .and_then(|w| w.performance())
+            .map_or(Date::now(), |p| p.now());
     }
 }
 
 pub fn get_elapsed_time() -> f64 {
     unsafe {
-        let end_time = window().and_then(|w| w.performance()).map_or(Date::now(), |p| p.now());
+        let end_time = window()
+            .and_then(|w| w.performance())
+            .map_or(Date::now(), |p| p.now());
         (end_time - STATE.start_time) / 1000.0
     }
 }

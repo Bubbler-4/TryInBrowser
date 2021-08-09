@@ -1,16 +1,18 @@
-use super::prelude::*;
-use std::rc::Rc;
-use wasm_bindgen::prelude::*;
-use web_sys::{WorkerGlobalScope, MessageEvent};
 use super::atw::ThreadWorker as AtwThreadWorker;
 use super::decode_task_msg;
 use super::job;
+use super::prelude::*;
+use std::rc::Rc;
+use wasm_bindgen::prelude::*;
+use web_sys::{MessageEvent, WorkerGlobalScope};
 
 #[allow(dead_code)]
 #[wasm_bindgen]
 pub fn wmt_bootstrap(wgs: WorkerGlobalScope) -> _Worker {
     let worker = _Worker::new(wgs);
-    worker.atw_thw.send_response(&JsValue::from("bootstrap COMPLETE"), None, false);
+    worker
+        .atw_thw
+        .send_response(&JsValue::from("bootstrap COMPLETE"), None, false);
 
     worker
 }
@@ -52,7 +54,7 @@ impl _Worker {
                 let msg = format!("unknown task: {}", name);
                 console_ln!("err: {}", &msg);
                 panic!("{}", msg);
-            },
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
-use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
-use wasm_bindgen::JsCast;
 use js_sys::{ArrayBuffer, Uint8Array};
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::JsFuture;
 use web_sys::{Response, /*TextDecoder,*/ TextEncoder};
 
 /* use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -45,9 +45,7 @@ pub fn u8arr_from_vec(vec: &[u8]) -> Uint8Array {
 }
 
 pub fn ab_from_text(text: &str) -> ArrayBuffer {
-    u8arr_from_vec(
-        &TextEncoder::new().unwrap().encode_with_input(text))
-        .buffer()
+    u8arr_from_vec(&TextEncoder::new().unwrap().encode_with_input(text)).buffer()
 }
 /* pub fn text_from_ab(ab: &ArrayBuffer) -> Option<String> {
     TextDecoder::new().ok()?
@@ -71,19 +69,23 @@ pub async fn fetch_and_response(url: &str) -> Result<Response, JsValue> {
     // cf: another approach to tell the context -- call Window/WorkerGlobalScope getters and compare with `.is_undefined()`
     // https://github.com/rustwasm/gloo/pull/106/files
 
-    let ret = JsFuture::from(obj.fetch_with_str(url)).await?
+    let ret = JsFuture::from(obj.fetch_with_str(url))
+        .await?
         .unchecked_into::<Response>();
     Ok(ret)
 }
 pub async fn fetch_as_text(url: &str) -> Result<String, JsValue> {
     let resp = fetch_and_response(url).await?;
-    let ret = JsFuture::from(resp.text()?).await?
-        .as_string().unwrap_throw();
+    let ret = JsFuture::from(resp.text()?)
+        .await?
+        .as_string()
+        .unwrap_throw();
     Ok(ret)
 }
 pub async fn fetch_as_arraybuffer(url: &str) -> Result<ArrayBuffer, JsValue> {
     let resp = fetch_and_response(url).await?;
-    let ret = JsFuture::from(resp.array_buffer()?).await?
+    let ret = JsFuture::from(resp.array_buffer()?)
+        .await?
         .unchecked_into::<ArrayBuffer>();
     Ok(ret)
 }

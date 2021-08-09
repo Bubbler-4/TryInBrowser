@@ -1,14 +1,14 @@
 #![allow(clippy::wildcard_imports)]
 
-mod runner;
 mod lang;
+mod runner;
 mod thread;
 
+use indoc::indoc;
 use seed::{prelude::*, *};
-use thread::prelude::OUT_LIMIT;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
-use indoc::indoc;
+use thread::prelude::OUT_LIMIT;
 use web_sys::window;
 
 fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
@@ -36,7 +36,7 @@ fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
         thread_ready: false,
         thread_running: false,
         stdout: String::with_capacity(OUT_LIMIT),
-        stderr: String::with_capacity(OUT_LIMIT+100),
+        stderr: String::with_capacity(OUT_LIMIT + 100),
         lang,
         code,
         stdin,
@@ -101,12 +101,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 let stderr_overflown = model.stderr.len() + err.len() > OUT_LIMIT;
                 let overflown = stdout_overflown || stderr_overflown;
                 if stdout_overflown {
-                    model.stdout.push_str(&out[..OUT_LIMIT - model.stdout.len()]);
+                    model
+                        .stdout
+                        .push_str(&out[..OUT_LIMIT - model.stdout.len()]);
                 } else {
                     model.stdout.push_str(&out);
                 }
                 if stderr_overflown {
-                    model.stderr.push_str(&err[..OUT_LIMIT - model.stderr.len()]);
+                    model
+                        .stderr
+                        .push_str(&err[..OUT_LIMIT - model.stderr.len()]);
                 } else {
                     model.stderr.push_str(&err);
                 }
@@ -116,11 +120,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 let crashed = runner::get_th_crashed() || overflown;
                 model.thread_running = !crashed && !finished;
                 if crashed || finished {
-                    model.stderr += &format!("\n\nElapsed time: {:.6} sec", runner::get_elapsed_time());
+                    model.stderr +=
+                        &format!("\n\nElapsed time: {:.6} sec", runner::get_elapsed_time());
                 }
                 if crashed {
                     model.thread_ready = false;
-                    model.stderr += if overflown { "\noutput limit exceeded" } else { "\ninterpreter crashed" };
+                    model.stderr += if overflown {
+                        "\noutput limit exceeded"
+                    } else {
+                        "\ninterpreter crashed"
+                    };
                 } else if finished {
                     model.stderr += "\nfinished";
                 }
@@ -224,17 +233,20 @@ fn format_post(
     hasher.write(args.as_bytes());
     let hash = hasher.finish();
     let display_code = if selection == "" { code } else { selection };
-    format!(indoc!(r#"
-        # [{0}][tib-{0}], {1} byte{2}
+    format!(
+        indoc!(
+            r#"
+            # [{0}][tib-{0}], {1} byte{2}
 
-        ```
-        {3}
-        ```
+            ```
+            {3}
+            ```
 
-        [Try in browser!][tib-{4:016x}]
-        [tib-{0}]: {5}
-        [tib-{4:016x}]: https://try-in-browser.netlify.app/#{6}
-        "#),
+            [Try in browser!][tib-{4:016x}]
+            [tib-{0}]: {5}
+            [tib-{4:016x}]: https://try-in-browser.netlify.app/#{6}
+            "#
+        ),
         lang,
         display_code.len(),
         if display_code.len() == 1 { "" } else { "s" },
@@ -280,14 +292,22 @@ fn view(model: &Model) -> Node<Msg> {
         br![],
         div![
             id!("langs"),
-            model.languages_list.iter().filter(|&x| model.languages_shown || x == &model.lang).map(|s| {
-                let s_clone = s.to_string();
-                div![
-                    C![IF!(&model.lang == s => "active"), IF!(&model.lang != s => "inactive"), IF!(model.thread_running => "disabled")],
-                    s,
-                    IF!(!model.thread_running => ev(Ev::Click, move |_| Msg::LangSet(s_clone)))
-                ]
-            })
+            model
+                .languages_list
+                .iter()
+                .filter(|&x| model.languages_shown || x == &model.lang)
+                .map(|s| {
+                    let s_clone = s.to_string();
+                    div![
+                        C![
+                            IF!(&model.lang == s => "active"),
+                            IF!(&model.lang != s => "inactive"),
+                            IF!(model.thread_running => "disabled")
+                        ],
+                        s,
+                        IF!(!model.thread_running => ev(Ev::Click, move |_| Msg::LangSet(s_clone)))
+                    ]
+                })
         ],
         br![],
         b!["Code"],
@@ -314,13 +334,13 @@ fn view(model: &Model) -> Node<Msg> {
         br![],
         button![
             id!("run"),
-            attrs!{ At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
+            attrs! { At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
             "Run",
             ev(Ev::Click, |_| Msg::Run)
         ],
         button![
             id!("stop"),
-            attrs!{ At::Disabled => (!model.thread_ready || !model.thread_running).as_at_value() },
+            attrs! { At::Disabled => (!model.thread_ready || !model.thread_running).as_at_value() },
             "Stop",
             ev(Ev::Click, |_| Msg::Stop)
         ],
@@ -337,7 +357,8 @@ fn view(model: &Model) -> Node<Msg> {
             "Postify",
             ev(Ev::MouseDown, |_| Msg::Postify)
         ],
-        br![], br![],
+        br![],
+        br![],
         b!["Output"],
         textarea![
             id!("stdout"),

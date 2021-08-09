@@ -1,14 +1,13 @@
+mod deadfish;
 mod example_lang;
 mod s10k;
-mod deadfish;
 
 pub fn lang_name_list() -> Vec<&'static str> {
-    let mut names = vec![
-        s10k::NAME,
-        deadfish::NAME,
-    ];
+    let mut names = vec![s10k::NAME, deadfish::NAME];
     names.sort_unstable();
-    if cfg!(feature="ui_debug") { names.push(example_lang::NAME); }
+    if cfg!(feature = "ui_debug") {
+        names.push(example_lang::NAME);
+    }
     names
 }
 
@@ -17,7 +16,7 @@ fn get_help(lang_name: &str) -> Option<&'static str> {
         example_lang::NAME => Some(example_lang::HELP),
         s10k::NAME => Some(s10k::HELP),
         deadfish::NAME => Some(deadfish::HELP),
-        _ => None
+        _ => None,
     }
 }
 
@@ -26,7 +25,7 @@ pub fn get_homepage(lang_name: &str) -> Option<&'static str> {
         example_lang::NAME => Some(example_lang::HOMEPAGE),
         s10k::NAME => Some(s10k::HOMEPAGE),
         deadfish::NAME => Some(deadfish::HOMEPAGE),
-        _ => None
+        _ => None,
     }
 }
 

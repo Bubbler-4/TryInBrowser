@@ -1,13 +1,13 @@
-use wasm_bindgen::prelude::*;
 use js_sys::{ArrayBuffer, Object, Reflect};
 use std::cell::RefCell;
+use wasm_bindgen::prelude::*;
 
-pub mod prelude;
-pub mod utils;
-mod job;
 mod atw;
-mod worker;
+mod job;
+pub mod prelude;
 mod thread;
+pub mod utils;
+mod worker;
 //mod lang;
 
 pub use thread::Thread;
@@ -29,9 +29,13 @@ macro_rules! debug_ln {
 }
 
 #[macro_export]
-macro_rules! exec_lang { ($th:expr, $str1:expr, $str2:expr, $str3:expr, $str4:expr) => (($th).exec_lang($str1, $str2, $str3, $str4)); }
+macro_rules! exec_lang {
+    ($th:expr, $str1:expr, $str2:expr, $str3:expr, $str4:expr) => {
+        ($th).exec_lang($str1, $str2, $str3, $str4)
+    };
+}
 
-pub const OUT_LIMIT: usize = 131072;
+pub const OUT_LIMIT: usize = 131_072;
 
 pub struct WasmMt {
     pkg_js_uri: Option<String>,
@@ -98,7 +102,8 @@ impl WasmMt {
         // https://rustwasm.github.io/wasm-bindgen/api/js_sys/struct.ArrayBuffer.html#method.slice
         Thread::new(
             self.ab_init.borrow().as_ref().unwrap().slice(0),
-            self.ab_wasm.borrow().as_ref().unwrap().slice(0))
+            self.ab_wasm.borrow().as_ref().unwrap().slice(0),
+        )
     }
 
     fn ab_init_from(pkg_js: &str) -> ArrayBuffer {
@@ -128,8 +133,9 @@ fn encode_task_msg(name: &str, data: Option<&JsValue>) -> Object {
 
 fn decode_task_msg(msg: &JsValue) -> (String, JsValue) {
     let name = Reflect::get(msg, &JsValue::from("task"))
-        .unwrap_throw().as_string().unwrap_throw();
-    let jsv = Reflect::get(msg, &JsValue::from("data"))
+        .unwrap_throw()
+        .as_string()
         .unwrap_throw();
+    let jsv = Reflect::get(msg, &JsValue::from("data")).unwrap_throw();
     (name, jsv)
 }

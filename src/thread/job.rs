@@ -1,8 +1,8 @@
+use super::atw::ThreadWorker as AtwThreadWorker;
 use super::prelude::*;
+use crate::lang::{interpret, LangWriter};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
-use super::atw::ThreadWorker as AtwThreadWorker;
-use crate::lang::{LangWriter, interpret};
 
 type ResultJJ = Result<JsValue, JsValue>;
 
@@ -12,9 +12,7 @@ pub struct AtwThreadWriter {
 
 impl AtwThreadWriter {
     pub fn new(atw_thw: Rc<AtwThreadWorker>) -> Self {
-        Self {
-            atw_thw,
-        }
+        Self { atw_thw }
     }
 }
 
@@ -53,7 +51,9 @@ pub fn send_result(result: ResultJJ, atw_thw: Rc<AtwThreadWorker>, cont: bool) {
 }
 
 pub fn run_job_lang(jsv: &JsValue, atw_thw: Rc<AtwThreadWorker>) {
-    let (lang, pgm, input, args) = jsv.into_serde::<(String, String, String, String)>().unwrap();
+    let (lang, pgm, input, args) = jsv
+        .into_serde::<(String, String, String, String)>()
+        .unwrap();
     console_ln!("run_job_lang: {} {} {} {}", lang, pgm, input, args);
     let mut writer = AtwThreadWriter::new(atw_thw);
     interpret(&lang, &pgm, &input, &args, &mut writer);

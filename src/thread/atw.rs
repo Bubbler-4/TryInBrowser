@@ -1,13 +1,13 @@
 // rust-wasm porting of -- https://github.com/w3reality/async-thread-worker
 
 use super::prelude::*;
+use js_sys::{Array, Function, Object, Promise, Reflect};
+use std::cell::RefCell;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use js_sys::{Array, Function, Object, Promise, Reflect};
 use web_sys::{MessageEvent, Worker, WorkerGlobalScope};
-use std::rc::Rc;
-use std::cell::RefCell;
 
 fn atw_encode_result_msg(result: &JsValue, is_ok: bool, cont: bool) -> Object {
     let msg = Object::new();
@@ -18,12 +18,15 @@ fn atw_encode_result_msg(result: &JsValue, is_ok: bool, cont: bool) -> Object {
 }
 
 fn atw_decode_result_msg(msg: &JsValue) -> (JsValue, bool, bool) {
-    let result = Reflect::get(msg, &JsValue::from("result"))
-        .unwrap_throw();
+    let result = Reflect::get(msg, &JsValue::from("result")).unwrap_throw();
     let is_ok = Reflect::get(msg, &JsValue::from("isOk"))
-        .unwrap_throw().as_bool().unwrap_throw();
+        .unwrap_throw()
+        .as_bool()
+        .unwrap_throw();
     let cont = Reflect::get(msg, &JsValue::from("cont"))
-        .unwrap_throw().as_bool().unwrap_throw();
+        .unwrap_throw()
+        .as_bool()
+        .unwrap_throw();
     (result, is_ok, cont)
 }
 
@@ -60,18 +63,22 @@ impl ThreadWorker {
     pub fn send_response(&self, payload: &JsValue, transfer: Option<&Array>, cont: bool) {
         let default = Array::new();
         let transfer = transfer.unwrap_or(&default);
-        self.wgs.post_message_with_transfer(
-            &atw_encode_result_msg(payload, true, cont), transfer);
+        self.wgs
+            .post_message_with_transfer(&atw_encode_result_msg(payload, true, cont), transfer);
     }
 
     pub fn send_error(&self, error: &JsValue) {
-        self.wgs.post_message_with_transfer(
-            &atw_encode_result_msg(error, false, false), &Array::new());
+        self.wgs
+            .post_message_with_transfer(&atw_encode_result_msg(error, false, false), &Array::new());
     }
 
     pub fn set_callback_of(&self, target: &str, cb: &JsValue) {
-        Reflect::set(&self.wgs, &JsValue::from(target),
-            &cb.unchecked_ref::<Function>().to_owned()).unwrap_throw();
+        Reflect::set(
+            &self.wgs,
+            &JsValue::from(target),
+            &cb.unchecked_ref::<Function>().to_owned(),
+        )
+        .unwrap_throw();
     }
 }
 
@@ -98,7 +105,10 @@ impl Thread {
         let worker = worker.unwrap_throw();
 
         let resrej = Rc::new(RefCell::new(None));
-        let messages = Rc::new(RefCell::new((String::with_capacity(OUT_LIMIT), String::with_capacity(OUT_LIMIT))));
+        let messages = Rc::new(RefCell::new((
+            String::with_capacity(OUT_LIMIT),
+            String::with_capacity(OUT_LIMIT),
+        )));
         let on_message = Self::create_onmessage(resrej.clone(), messages.clone());
         worker.set_onmessage(Some(on_message.as_ref().unchecked_ref::<Function>()));
         let on_error = Self::create_onerror(resrej.clone());
@@ -114,7 +124,10 @@ impl Thread {
         }
     }
 
-    fn create_onmessage(resrej: Rc<RefCell<Option<(Function, Function)>>>, messages: Rc<RefCell<(String, String)>>) -> Closure<dyn FnMut(MessageEvent)> {
+    fn create_onmessage(
+        resrej: Rc<RefCell<Option<(Function, Function)>>>,
+        messages: Rc<RefCell<(String, String)>>,
+    ) -> Closure<dyn FnMut(MessageEvent)> {
         Closure::wrap(Box::new(move |me: MessageEvent| {
             let msg = me.data();
 
@@ -137,7 +150,8 @@ impl Thread {
                         let resrej_borrow = resrej.borrow();
                         assert!(resrej_borrow.is_some());
                         let (_res, rej) = resrej_borrow.as_ref().unwrap_throw();
-                        rej.call1(&JsValue::NULL, &JsValue::from("Stdout limit exceeded")).unwrap();
+                        rej.call1(&JsValue::NULL, &JsValue::from("Stdout limit exceeded"))
+                            .unwrap();
                     }
                 }
                 {
@@ -150,34 +164,43 @@ impl Thread {
                         let resrej_borrow = resrej.borrow();
                         assert!(resrej_borrow.is_some());
                         let (_res, rej) = resrej_borrow.as_ref().unwrap_throw();
-                        rej.call1(&JsValue::NULL, &JsValue::from("Stderr limit exceeded")).unwrap();
+                        rej.call1(&JsValue::NULL, &JsValue::from("Stderr limit exceeded"))
+                            .unwrap();
                     }
                 }
             } else {
                 let resrej_borrow = resrej.borrow();
                 assert!(resrej_borrow.is_some());
-                let (res, rej) = resrej_borrow.as_ref().unwrap_throw();
-                (if is_ok { res } else { rej })
+                let (result, reject) = resrej_borrow.as_ref().unwrap_throw();
+                (if is_ok { result } else { reject })
                     .call1(&JsValue::NULL, &result)
                     .unwrap_throw();
             }
         }) as Box<dyn FnMut(MessageEvent)>)
     }
 
-    fn create_onerror(resrej: Rc<RefCell<Option<(Function, Function)>>>) -> Closure<dyn FnMut(MessageEvent)> {
+    fn create_onerror(
+        resrej: Rc<RefCell<Option<(Function, Function)>>>,
+    ) -> Closure<dyn FnMut(MessageEvent)> {
         Closure::wrap(Box::new(move |_me: MessageEvent| {
             console_ln!("terminated by error");
             let resrej_borrow = resrej.borrow();
             assert!(resrej_borrow.is_some());
             let (_res, rej) = resrej_borrow.as_ref().unwrap_throw();
-            rej.call1(&JsValue::NULL, &JsValue::from("Thread: last req canceled")).unwrap();
+            rej.call1(&JsValue::NULL, &JsValue::from("Thread: last req canceled"))
+                .unwrap();
         }) as Box<dyn FnMut(MessageEvent)>)
     }
 
-    pub async fn send_request(&self, payload: &JsValue, transfer: Option<&Array>) -> Result<JsValue, JsValue> {
+    pub async fn send_request(
+        &self,
+        payload: &JsValue,
+        transfer: Option<&Array>,
+    ) -> Result<JsValue, JsValue> {
         let promise = Promise::new(&mut |res, rej| {
             if *self.is_terminated.borrow() {
-                rej.call1(&JsValue::NULL, &JsValue::from("worker already terminated")).unwrap_throw();
+                rej.call1(&JsValue::NULL, &JsValue::from("worker already terminated"))
+                    .unwrap_throw();
                 return;
             }
 
@@ -187,8 +210,9 @@ impl Thread {
 
             let default = Array::new();
             let transfer = transfer.unwrap_or(&default);
-            self.worker.post_message_with_transfer(
-                payload, transfer).unwrap_throw();
+            self.worker
+                .post_message_with_transfer(payload, transfer)
+                .unwrap_throw();
         });
 
         JsFuture::from(promise).await
@@ -198,7 +222,8 @@ impl Thread {
         let resrej_borrow = self.resrej.borrow();
         assert!(resrej_borrow.is_some());
         let (_res, rej) = resrej_borrow.as_ref().unwrap_throw();
-        rej.call1(&JsValue::NULL, &JsValue::from("Thread: last req canceled")).unwrap();
+        rej.call1(&JsValue::NULL, &JsValue::from("Thread: last req canceled"))
+            .unwrap();
     }
 
     pub fn terminate(&self) {
