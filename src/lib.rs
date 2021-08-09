@@ -165,7 +165,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 model.dragging = true;
             } else if model.dragging {
                 model.dragging = false;
-                model.code_selection = get_selection().unwrap_or(String::default());
+                model.code_selection = get_selection().unwrap_or_default();
             } else {
                 model.code_selection = String::default();
             }
@@ -232,7 +232,7 @@ fn format_post(
     hasher.write_u8(0);
     hasher.write(args.as_bytes());
     let hash = hasher.finish();
-    let display_code = if selection == "" { code } else { selection };
+    let display_code = if selection.is_empty() { code } else { selection };
     format!(
         indoc!(
             r#"

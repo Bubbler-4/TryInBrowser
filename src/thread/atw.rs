@@ -173,7 +173,7 @@ impl Thread {
                 assert!(resrej_borrow.is_some());
                 let (result, reject) = resrej_borrow.as_ref().unwrap_throw();
                 (if is_ok { result } else { reject })
-                    .call1(&JsValue::NULL, &result)
+                    .call1(&JsValue::NULL, result)
                     .unwrap_throw();
             }
         }) as Box<dyn FnMut(MessageEvent)>)

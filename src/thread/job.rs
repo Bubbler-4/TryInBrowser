@@ -35,7 +35,7 @@ impl LangWriter for AtwThreadWriter {
         send_result(pass_encode(out, err), self.atw_thw.clone(), true);
     }
     fn terminate(&mut self) {
-        send_result(pass_encode(&"", &""), self.atw_thw.clone(), false);
+        send_result(pass_encode("", ""), self.atw_thw.clone(), false);
     }
     fn terminate_with_error(&mut self, msg: &str) {
         send_result(err_encode(msg), self.atw_thw.clone(), false);

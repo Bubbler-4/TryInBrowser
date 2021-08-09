@@ -27,6 +27,7 @@ pub fn get_homepage(lang_name: &str) -> Option<&'static str> {
         example_lang::NAME => Some(example_lang::HOMEPAGE),
         s10k::NAME => Some(s10k::HOMEPAGE),
         deadfish::NAME => Some(deadfish::HOMEPAGE),
+        brainfuck::NAME => Some(brainfuck::HOMEPAGE),
         _ => None,
     }
 }
@@ -34,10 +35,10 @@ pub fn get_homepage(lang_name: &str) -> Option<&'static str> {
 pub trait LangWriter {
     fn write_both(&mut self, out: &str, err: &str);
     fn write_out(&mut self, out: &str) {
-        self.write_both(out, &"");
+        self.write_both(out, "");
     }
     fn write_err(&mut self, err: &str) {
-        self.write_both(&"", err);
+        self.write_both("", err);
     }
     fn terminate(&mut self) {}
     fn terminate_with_error(&mut self, _msg: &str) {}

@@ -109,7 +109,7 @@ impl WasmMt {
     fn ab_init_from(pkg_js: &str) -> ArrayBuffer {
         let mut init_js = String::new();
         init_js.push_str("return () => { ");
-        init_js.push_str(&pkg_js);
+        init_js.push_str(pkg_js);
         init_js.push_str(" return wasm_bindgen; };");
 
         utils::ab_from_text(&init_js)

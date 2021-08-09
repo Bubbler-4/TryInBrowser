@@ -41,11 +41,13 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
     //Load the indices of the `[`'s and `]`'s into `loops`
     while ind < pgm.len() {
         match pgm[ind] {
-            b'[' => loop_starts.push(ind),
+            b'[' => {
+                loop_starts.push(ind);
+            },
             b']' => {
                 match loop_starts.pop() {
                     Some(loop_start) => {
-                        loops[loop_start] = ind
+                        loops.insert(loop_start, ind);
                     },
                     None => {
                         writer.terminate_with_error(
@@ -60,7 +62,7 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
             }
             _ => {}
         }
-        ind += 1
+        ind += 1;
     }
 
     //Handle unclosed loops
@@ -79,28 +81,27 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
         ind += 1;
         match curr_cmd {
             b'+' => {
-                if tape[pos] == 256 {
-                    tape[pos] = 0
+                if tape[pos] == 255 {
+                    tape[pos] = 0;
                 } else {
-                    tape[pos] += 1
+                    tape[pos] += 1;
                 }
             }
             b'-' => {
                 if tape[pos] == 0 {
-                    tape[pos] = 256
+                    tape[pos] = 255;
                 } else {
-                    tape[pos] -= 1
+                    tape[pos] -= 1;
                 }
             }
             b'>' => {
                 pos += 1;
                 if pos == tape.len() {
-                    tape.extend(zeroes.iter())
+                    tape.extend(zeroes.iter());
                 }
             }
             b'<' => {
-                pos -= 1;
-                if pos < 0 {
+                if pos == 0 {
                     writer.terminate_with_error(
                         &*format!(
                             "Error on `<` at index {}: Reached left end of tape",
@@ -109,15 +110,16 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
                     );
                     return;
                 }
+                pos -= 1;
             }
             b'.' => {
                 let out = tape[pos] as char;
-                writer.write_out(&*out.to_string())
+                writer.write_out(&*out.to_string());
             }
             b',' => {
                 match input.next() {
                     Some(char) => {
-                        tape[pos] = char
+                        tape[pos] = char;
                     }
                     None => {
                         writer.terminate_with_error(
@@ -133,16 +135,16 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
             b'[' => {
                 if tape[pos] == 0 {
                     //Jump to one command after the end of the loop
-                    ind = loops[ind] + 1
+                    ind = loops[&ind] + 1;
                 } else {
-                    loop_starts.push(ind)
+                    loop_starts.push(ind);
                 }
             }
             b']' => {
                 //Jump to the start of this loop, which is the last loop
                 //We can unwrap without fear because the loops have been
                 //checked in the previous while loop
-                ind = loop_starts.pop().unwrap()
+                ind = loop_starts.pop().unwrap();
             }
             _ => {} //This is a comment, don't do anything
         }
