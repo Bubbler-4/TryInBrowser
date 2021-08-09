@@ -1,12 +1,22 @@
 mod example_lang;
+mod s10k;
+mod deadfish;
 
 pub fn lang_name_list() -> Vec<&'static str> {
-    vec![example_lang::NAME]
+    let mut names = vec![
+        s10k::NAME,
+        deadfish::NAME,
+    ];
+    names.sort_unstable();
+    if cfg!(feature="ui_debug") { names.push(example_lang::NAME); }
+    names
 }
 
 fn get_help(lang_name: &str) -> Option<&'static str> {
     match lang_name {
         example_lang::NAME => Some(example_lang::HELP),
+        s10k::NAME => Some(s10k::HELP),
+        deadfish::NAME => Some(deadfish::HELP),
         _ => None
     }
 }
@@ -14,6 +24,8 @@ fn get_help(lang_name: &str) -> Option<&'static str> {
 pub fn get_homepage(lang_name: &str) -> Option<&'static str> {
     match lang_name {
         example_lang::NAME => Some(example_lang::HOMEPAGE),
+        s10k::NAME => Some(s10k::HOMEPAGE),
+        deadfish::NAME => Some(deadfish::HOMEPAGE),
         _ => None
     }
 }
@@ -40,6 +52,8 @@ pub fn interpret<T: LangWriter>(lang: &str, pgm: &str, input: &str, args: &str, 
     }
     match lang {
         example_lang::NAME => example_lang::interpret(pgm, input, args, writer),
+        s10k::NAME => s10k::interpret(pgm, input, args, writer),
+        deadfish::NAME => deadfish::interpret(pgm, input, args, writer),
         _ => {
             let err = format!("Unknown lang: {}", lang);
             writer.write_err(&err);

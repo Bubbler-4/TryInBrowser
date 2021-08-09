@@ -39,7 +39,7 @@ features = [
 ]
 
 [features]
-ui_health = []
+ui_debug = []
 
 [profile.release]
 lto = true

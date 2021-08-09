@@ -4,13 +4,13 @@ use indoc::indoc;
 pub const NAME: &'static str = "ExampleLang";
 pub const HOMEPAGE: &'static str = "https://example.com";
 pub const HELP: &'static str = indoc!(r#"
-An example language for debugging purposes.
+    An example language for debugging purposes.
 
-program == "lang": Print some chars on stdout and stderr, and halt (fast).
-program == "slow": Print some chars on stdout and stderr, and halt (slow).
-program == "crasher": Print some chars but crash after a while.
-program == "looper": Print things very slowly, forever.
-program == "talker": Print things very fast, exceeding the output limit.
+    program == "lang": Print some chars on stdout and stderr, and halt (fast).
+    program == "slow": Print some chars on stdout and stderr, and halt (slow).
+    program == "crasher": Print some chars but crash after a while.
+    program == "looper": Print things very slowly, forever.
+    program == "talker": Print things very fast, exceeding the output limit.
 "#);
 
 pub fn interpret<T: LangWriter>(pgm: &str, input: &str, args: &str, writer: &mut T) {

@@ -31,7 +31,7 @@ macro_rules! debug_ln {
 #[macro_export]
 macro_rules! exec_lang { ($th:expr, $str1:expr, $str2:expr, $str3:expr, $str4:expr) => (($th).exec_lang($str1, $str2, $str3, $str4)); }
 
-pub const OUT_LIMIT: usize = 10000;
+pub const OUT_LIMIT: usize = 131072;
 
 pub struct WasmMt {
     pkg_js_uri: Option<String>,

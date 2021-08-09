@@ -15,9 +15,9 @@ fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.after_next_render(Msg::Rendered);
     runner::runner_init();
     let languages_list = lang::lang_name_list();
-    let lang = url
-        .next_hash_path_part()
-        .map_or_else(|| languages_list[0].to_string(), b64_to_string);
+    let lang_part = url.next_hash_path_part();
+    let languages_shown = lang_part.is_none();
+    let lang = lang_part.map_or_else(|| languages_list[0].to_string(), b64_to_string);
     log!(lang);
     let code = url
         .next_hash_path_part()
@@ -41,7 +41,7 @@ fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
         code,
         stdin,
         args,
-        languages_shown: true,
+        languages_shown,
         languages_list,
         url,
     }
@@ -159,7 +159,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             );
             //model.running_text.clear();
             model.stdout.clear();
-            model.stdout += "https://bubbler-4.github.io/TryInBrowser/#";
+            model.stdout += "https://try-in-browser.netlify.app/#";
             model.stdout += model.url.hash().unwrap_or(&"".to_string());
             model.stderr.clear();
         }
@@ -247,7 +247,7 @@ fn get_selection() -> Option<String> {
 
 fn view(model: &Model) -> Node<Msg> {
     div![
-        IF!(cfg!(feature="ui_health") => div![
+        IF!(cfg!(feature="ui_debug") => div![
             "UI health: ", ".".repeat(model.spinner as usize / 10 % 10),
             br![], br![],
         ]),
@@ -261,9 +261,9 @@ fn view(model: &Model) -> Node<Msg> {
             ev(Ev::Click, |_| Msg::LangListToggle)
         ],
         br![],
-        IF!(model.languages_shown => div![
+        div![
             id!("langs"),
-            model.languages_list.iter().map(|s| {
+            model.languages_list.iter().filter(|&x| model.languages_shown || x == &model.lang).map(|s| {
                 let s_clone = s.to_string();
                 div![
                     C![IF!(&model.lang == s => "active"), IF!(&model.lang != s => "inactive"), IF!(model.thread_running => "disabled")],
@@ -271,26 +271,26 @@ fn view(model: &Model) -> Node<Msg> {
                     IF!(!model.thread_running => ev(Ev::Click, move |_| Msg::LangSet(s_clone)))
                 ]
             })
-        ]),
+        ],
         br![],
         b!["Code"],
         textarea![
             id!("code"),
-            attrs! {At::Rows => rows(&model.code, 4), At::Cols => COLS, At::Value => model.code},
+            attrs! {At::SpellCheck => false, At::Rows => rows(&model.code, 4), At::Cols => COLS, At::Value => model.code},
             input_ev(Ev::Input, Msg::CodeUpdate)
         ],
         br![],
         b!["Stdin"],
         textarea![
             id!("stdin"),
-            attrs! {At::Rows => rows(&model.stdin, 4), At::Cols => COLS, At::Value => model.stdin},
+            attrs! {At::SpellCheck => false, At::Rows => rows(&model.stdin, 4), At::Cols => COLS, At::Value => model.stdin},
             input_ev(Ev::Input, Msg::StdinUpdate)
         ],
         br![],
         b!["Arguments (enter -h and press Run for usage)"],
         textarea![
             id!("args"),
-            attrs! {At::Rows => rows(&model.args, 1), At::Cols => COLS, At::Value => model.args},
+            attrs! {At::SpellCheck => false, At::Rows => rows(&model.args, 1), At::Cols => COLS, At::Value => model.args},
             input_ev(Ev::Input, Msg::ArgsUpdate)
         ],
         br![],
