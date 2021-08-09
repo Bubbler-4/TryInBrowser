@@ -247,9 +247,10 @@ fn get_selection() -> Option<String> {
 
 fn view(model: &Model) -> Node<Msg> {
     div![
-        "UI health: ", ".".repeat(model.spinner as usize / 10 % 10),
-        br![], br![],
-        
+        IF!(cfg!(feature="ui_health") => div![
+            "UI health: ", ".".repeat(model.spinner as usize / 10 % 10),
+            br![], br![],
+        ]),
         b!["Languages"],
         span![
             if model.languages_shown {

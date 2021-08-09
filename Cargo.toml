@@ -38,6 +38,9 @@ features = [
   'WorkerGlobalScope',
 ]
 
+[features]
+ui_health = []
+
 [profile.release]
 lto = true
 opt-level = 'z'
