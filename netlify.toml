@@ -1,5 +1,5 @@
 [build]
-  command = "curl -fsSL https://github.com/WebAssembly/binaryen/releases/download/version_101/binaryen-version_101-x86_64-linux.tar.gz --output $NETLIFY_CACHE_DIR/binaryen.tar.gz && tar -xvzf $NETLIFY_CACHE_DIR/binaryen.tar.gz && export PATH=$PATH:$NETLIFY_CACHE_DIR/binaryen && cargo make build_release"
+  command = "curl -fsSL https://github.com/WebAssembly/binaryen/releases/download/version_101/binaryen-version_101-x86_64-linux.tar.gz --output /tmp/binaryen.tar.gz && tar -xvzf /tmp/binaryen.tar.gz && export PATH=$PATH:/tmp/binaryen && cargo make build_release"
 
 [[headers]]
   for = "/*"
