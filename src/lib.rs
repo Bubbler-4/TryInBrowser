@@ -44,6 +44,8 @@ fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
         languages_shown,
         languages_list,
         url,
+        dragging: false,
+        code_selection: String::default(),
     }
 }
 
@@ -67,6 +69,8 @@ struct Model {
     languages_shown: bool,
     languages_list: Vec<&'static str>,
     url: Url,
+    dragging: bool,
+    code_selection: String,
 }
 
 enum Msg {
@@ -80,6 +84,7 @@ enum Msg {
     LangListToggle,
     Linkify,
     Postify,
+    CodeSelect(bool),
 }
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
@@ -146,6 +151,17 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::CodeUpdate(s) => model.code = s,
         Msg::StdinUpdate(s) => model.stdin = s,
         Msg::ArgsUpdate(s) => model.args = s,
+        Msg::CodeSelect(is_start) => {
+            if is_start {
+                model.dragging = true;
+            } else if model.dragging {
+                model.dragging = false;
+                model.code_selection = get_selection().unwrap_or(String::default());
+            } else {
+                model.code_selection = String::default();
+            }
+            log!("current code selection: ", model.code_selection);
+        }
         Msg::LangListToggle => {
             model.languages_shown = !model.languages_shown;
         }
@@ -180,6 +196,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 &model.code,
                 &model.stdin,
                 &model.args,
+                &model.code_selection,
                 homepage,
                 &model.url,
             );
@@ -193,6 +210,7 @@ fn format_post(
     code: &str,
     input: &str,
     args: &str,
+    selection: &str,
     lang_link: &str,
     url: &Url,
 ) -> String {
@@ -205,8 +223,7 @@ fn format_post(
     hasher.write_u8(0);
     hasher.write(args.as_bytes());
     let hash = hasher.finish();
-    let selection = get_selection();
-    let display_code: &str = selection.as_ref().map_or(code, |s| if s == "" { code } else { s });
+    let display_code = if selection == "" { code } else { selection };
     format!(indoc!(r#"
         # [{0}][tib-{0}], {1} byte{2}
 
@@ -277,7 +294,8 @@ fn view(model: &Model) -> Node<Msg> {
         textarea![
             id!("code"),
             attrs! {At::SpellCheck => false, At::Rows => rows(&model.code, 4), At::Cols => COLS, At::Value => model.code},
-            input_ev(Ev::Input, Msg::CodeUpdate)
+            input_ev(Ev::Input, Msg::CodeUpdate),
+            ev(Ev::MouseDown, |_| Msg::CodeSelect(true))
         ],
         br![],
         b!["Stdin"],
@@ -317,7 +335,7 @@ fn view(model: &Model) -> Node<Msg> {
             id!("postify"),
             attrs! {At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
             "Postify",
-            ev(Ev::Click, |_| Msg::Postify)
+            ev(Ev::MouseDown, |_| Msg::Postify)
         ],
         br![], br![],
         b!["Output"],
@@ -331,6 +349,7 @@ fn view(model: &Model) -> Node<Msg> {
             id!("stderr"),
             attrs! {At::Rows => rows(&model.stderr, 1), At::Cols => COLS, At::Value => model.stderr},
         ],
+        ev(Ev::MouseUp, |_| Msg::CodeSelect(false)),
     ]
 }
 
