@@ -1,5 +1,5 @@
 [build]
-  command = "curl -fsSL https://github.com/WebAssembly/binaryen/releases/download/version_101/binaryen-version_101-x86_64-linux.tar.gz --output /tmp/binaryen.tar.gz && mkdir /tmp/binaryen && tar -xvzf /tmp/binaryen.tar.gz -C /tmp/binaryen && export PATH=$PATH:/tmp/binaryen/binaryen-version_101/bin/ && cargo install --version 0.2.74 wasm-bindgen-cli && wasm-pack build --target no-modules --out-name package && wasm-opt -Os pkg/package_bg.wasm -o pkg/package_bg.wasm"
+  command = "curl -fsSL https://github.com/WebAssembly/binaryen/releases/download/version_101/binaryen-version_101-x86_64-linux.tar.gz --output /tmp/binaryen.tar.gz && mkdir /tmp/binaryen && tar -xvzf /tmp/binaryen.tar.gz -C /tmp/binaryen && export PATH=$PATH:/tmp/binaryen/binaryen-version_101/bin/ && cargo install --version 0.2.74 wasm-bindgen-cli --force && wasm-pack build --target no-modules --out-name package && wasm-opt -Os pkg/package_bg.wasm -o pkg/package_bg.wasm"
 
 [[headers]]
   for = "/*"
