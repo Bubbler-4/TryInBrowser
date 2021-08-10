@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use indoc::indoc;
 
+use crate::lang::Language2;
+
 use super::LangWriter;
 
 pub const NAME: &str = "brainfuck";
@@ -24,7 +26,14 @@ pub const HELP: &str = indoc!(
     "#
 );
 
-pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, writer: &mut T) {
+pub static IMPL: Language2 = Language2 {
+    name: NAME,
+    help: HELP,
+    homepage: HOMEPAGE,
+    interpret,
+};
+
+pub fn interpret(pgm_str: &str, input_str: &str, _args: &str, writer: &mut dyn LangWriter) {
     let pgm = String::from(pgm_str).into_bytes();
     let mut input = input_str.bytes();
 

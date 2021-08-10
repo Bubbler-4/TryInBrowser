@@ -1,6 +1,7 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
+
 mod brainfuck;
 mod deadfish;
 mod example_lang;
@@ -15,24 +16,16 @@ pub fn lang_name_list() -> Vec<&'static str> {
     names
 }
 
+pub fn find_lang(lang_name: &str) -> Option<&'static Language2> {
+    LANGS.iter().find(|tib_lang| tib_lang.name == lang_name).copied()
+}
+
 fn get_help(lang_name: &str) -> Option<&'static str> {
-    match lang_name {
-        example_lang::NAME => Some(example_lang::HELP),
-        s10k::NAME => Some(s10k::HELP),
-        deadfish::NAME => Some(deadfish::HELP),
-        brainfuck::NAME => Some(brainfuck::HELP),
-        _ => None,
-    }
+    find_lang(lang_name).map(|lang| lang.help)
 }
 
 pub fn get_homepage(lang_name: &str) -> Option<&'static str> {
-    match lang_name {
-        example_lang::NAME => Some(example_lang::HOMEPAGE),
-        s10k::NAME => Some(s10k::HOMEPAGE),
-        deadfish::NAME => Some(deadfish::HOMEPAGE),
-        brainfuck::NAME => Some(brainfuck::HOMEPAGE),
-        _ => None,
-    }
+    find_lang(lang_name).map(|lang| lang.homepage)
 }
 
 pub trait LangWriter {
@@ -47,6 +40,15 @@ pub trait LangWriter {
     fn terminate_with_error(&mut self, _msg: &str) {}
 }
 
+pub struct Language2 {
+    name: &'static str,
+    help: &'static str,
+    homepage: &'static str,
+    interpret: fn(pgm: &str, input: &str, args: &str, writer: &mut dyn LangWriter),
+}
+
+static LANGS: &[&Language2] = &[&brainfuck::IMPL, &deadfish::IMPL, &s10k::IMPL];
+
 pub fn interpret<T: LangWriter>(lang: &str, pgm: &str, input: &str, args: &str, writer: &mut T) {
     if args == "-h" {
         if let Some(help) = get_help(lang) {
@@ -55,17 +57,16 @@ pub fn interpret<T: LangWriter>(lang: &str, pgm: &str, input: &str, args: &str, 
             return;
         }
     }
-    match lang {
-        example_lang::NAME => example_lang::interpret(pgm, input, args, writer),
-        s10k::NAME => s10k::interpret(pgm, input, args, writer),
-        deadfish::NAME => deadfish::interpret(pgm, input, args, writer),
-        brainfuck::NAME => brainfuck::interpret(pgm, input, args, writer),
-        _ => {
+
+    match find_lang(lang) {
+        Some(tib_lang) => {
+            (tib_lang.interpret)(pgm, input, args, writer);
+            writer.terminate();
+        }
+        None => {
             let err = format!("Unknown lang: {}", lang);
             writer.write_err(&err);
             writer.terminate_with_error(&err);
-            return;
         }
     }
-    writer.terminate();
 }

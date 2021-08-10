@@ -1,5 +1,8 @@
-use super::LangWriter;
 use indoc::indoc;
+
+use crate::lang::Language2;
+
+use super::LangWriter;
 
 pub const NAME: &str = "Deadfish";
 pub const HOMEPAGE: &str = "https://esolangs.org/wiki/Deadfish";
@@ -13,7 +16,15 @@ pub const HELP: &str = indoc!(
     "#
 );
 
-pub fn interpret<T: LangWriter>(pgm: &str, _input: &str, args: &str, writer: &mut T) {
+pub static IMPL: Language2 = Language2 {
+    name: NAME,
+    help: HELP,
+    homepage: HOMEPAGE,
+    interpret,
+};
+
+
+pub fn interpret(pgm: &str, _input: &str, args: &str, writer: &mut dyn LangWriter) {
     let mut counter = 0_u32;
     let is_char_output = args == "-o";
     for b in pgm.bytes() {
