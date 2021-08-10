@@ -89,8 +89,8 @@ impl Thread {
             .send_request(&payload, Some(&Array::of2(&ab_init, &ab_wasm)))
             .await;
         let result = match result {
-            Ok(jsv) => format!("ok: {}", jsv.as_string().unwrap()),
-            Err(jsv) => format!("err: {}", jsv.as_string().unwrap()),
+            Ok(_jsv) => "ok", // format!("ok: {}", jsv.as_string().unwrap()),
+            Err(_jsv) => "err", // format!("err: {}", jsv.as_string().unwrap()),
         };
         debug_ln!("init() - result: {}", result);
 
