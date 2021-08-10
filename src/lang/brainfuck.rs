@@ -11,13 +11,14 @@ pub const HELP: &str = indoc!(
     brainfuck (https://esolangs.org/wiki/Brainfuck)
     Accepted arguments:
     -h    Show this help and exit
+    Uses 8-bit wrapping cells and a right-infinite tape.
 
     +    Increment cell
     -    Increment cell
     >    Move pointer right
-    <    Move pointer left
+    <    Move pointer left (error on out of bounds)
     .    Output character value of cell
-    ,    Read a character as an integer
+    ,    Read a character as an integer (0 on EOF)
     [    Start of while loop
     ]    End of loop
     "#
@@ -76,6 +77,7 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
         return;
     }
 
+    ind = 0;
     while ind < pgm.len() {
         let curr_cmd = pgm[ind];
         ind += 1;
@@ -134,7 +136,11 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
                 //Jump to the start of this loop, which is the last loop
                 //We can unwrap without fear because the loops have been
                 //checked in the previous while loop
-                ind = loop_starts.pop().unwrap();
+                if tape[pos] == 0 {
+                    loop_starts.pop();
+                } else {
+                    ind = *loop_starts.last().unwrap();
+                }
             }
             _ => {} //This is a comment, don't do anything
         }
