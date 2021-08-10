@@ -43,13 +43,14 @@ extern "C" {
     #[wasm_bindgen(js_name = _)]
     type JsWgs;
 
+    #[allow(clippy::use_self)]
     #[wasm_bindgen(method, js_name = postMessage)]
     fn post_message_with_transfer(this: &JsWgs, data: &JsValue, transfer: &Array);
 }
 
 impl JsWgs {
     fn new(wgs: WorkerGlobalScope) -> Self {
-        wgs.unchecked_into::<JsWgs>()
+        wgs.unchecked_into::<Self>()
     }
 }
 
@@ -76,7 +77,7 @@ impl ThreadWorker {
         Reflect::set(
             &self.wgs,
             &JsValue::from(target),
-            &cb.unchecked_ref::<Function>().to_owned(),
+            &cb.unchecked_ref::<Function>().clone(),
         )
         .unwrap_throw();
     }

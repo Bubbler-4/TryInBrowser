@@ -27,11 +27,10 @@ pub const HELP: &str = indoc!(
 pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, writer: &mut T) {
     let pgm = String::from(pgm_str).into_bytes();
     let mut input = input_str.bytes();
-    let mut ind = 0usize;
 
-    let mut pos = 0usize;
-    let zeroes = vec![0u8; 100];
-    let mut tape = zeroes.to_vec();
+    let mut pos = 0_usize;
+    let zeroes = vec![0_u8; 100];
+    let mut tape = zeroes.clone();
 
     //Keys are the indices of loop starts, values are indices of loop ends
     let mut loops = HashMap::<usize, usize>::new();
@@ -40,44 +39,35 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
     let mut loop_starts = Vec::<usize>::new();
 
     //Load the indices of the `[`'s and `]`'s into `loops`
-    while ind < pgm.len() {
-        match pgm[ind] {
+    //while ind < pgm.len() {
+    for (ind, char) in pgm.iter().enumerate() {
+        match char {
             b'[' => {
                 loop_starts.push(ind);
-            },
+            }
             b']' => {
-                match loop_starts.pop() {
-                    Some(loop_start) => {
-                        loops.insert(loop_start, ind);
-                    },
-                    None => {
-                        writer.terminate_with_error(
-                            &*format!(
-                                "Extra `]` found at index {}",
-                                ind
-                            )
-                        );
-                        return;
-                    }
+                if let Some(loop_start) = loop_starts.pop() {
+                    loops.insert(loop_start, ind);
+                } else {
+                    writer.terminate_with_error(&*format!("Extra `]` found at index {}", ind));
+                    return;
                 }
             }
             _ => {}
         }
-        ind += 1;
+        //ind += 1;
     }
 
     //Handle unclosed loops
     if !loop_starts.is_empty() {
-        writer.terminate_with_error(
-            &*format!(
-                "Error: Missing closing `]`'s to correspond with `[`'s at indices {:?}",
-                loops
-            )
-        );
+        writer.terminate_with_error(&*format!(
+            "Error: Missing closing `]`'s to correspond with `[`'s at indices {:?}",
+            loops
+        ));
         return;
     }
 
-    ind = 0;
+    let mut ind = 0_usize;
     while ind < pgm.len() {
         let curr_cmd = pgm[ind];
         ind += 1;
@@ -104,12 +94,10 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
             }
             b'<' => {
                 if pos == 0 {
-                    writer.terminate_with_error(
-                        &*format!(
-                            "Error on `<` at index {}: Reached left end of tape",
-                            ind
-                        )
-                    );
+                    writer.terminate_with_error(&*format!(
+                        "Error on `<` at index {}: Reached left end of tape",
+                        ind
+                    ));
                     return;
                 }
                 pos -= 1;
@@ -119,10 +107,7 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
                 writer.write_out(&*out.to_string());
             }
             b',' => {
-                tape[pos] = match input.next() {
-                    Some(char) => char,
-                    None => 0
-                }
+                tape[pos] = input.next().unwrap_or(0);
             }
             b'[' => {
                 if tape[pos] == 0 {

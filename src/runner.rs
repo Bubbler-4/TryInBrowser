@@ -1,11 +1,11 @@
 use js_sys::Date;
 use seed::log;
-use thread::prelude::*;
-use thread::Thread;
+use threading::prelude::*;
+use threading::Thread;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::window;
 
-use crate::thread;
+use crate::threading;
 
 struct RunnerState {
     mt: Option<WasmMt>,
@@ -132,17 +132,18 @@ pub fn get_elapsed_time() -> f64 {
 
 pub fn take_result_from_thread() -> (String, String) {
     unsafe {
-        if let Some(ref mut th) = STATE.thread {
-            let s1 = th.stdout();
-            let s2 = th.stderr();
-            (s1, s2)
-        } else {
-            (String::new(), String::new())
-        }
+        STATE.thread.as_mut().map_or_else(
+            || (String::new(), String::new()),
+            |th| {
+                let s1 = th.stdout();
+                let s2 = th.stderr();
+                (s1, s2)
+            },
+        )
     }
 }
 
-pub fn runner_init() {
+pub fn init() {
     spawn_local(async {
         let pkg_js = "./pkg/package.js";
         let mt = WasmMt::new(pkg_js).and_init().await.unwrap();
@@ -179,15 +180,12 @@ pub fn run(lang: &str, code: &str, stdin: &str, args: &str) {
         let end_time: f64 = Date::now();
         let elapsed = (end_time - start_time) / 1000.0;
         log!(result, elapsed);
-        match result {
-            Ok(_jsval) => {
-                log!("finished");
-                set_th_finished(true);
-            }
-            Err(_) => {
-                set_result("".to_string(), "err found".to_string());
-                set_th_crashed(true);
-            }
+        if let Ok(_jsval) = result {
+            log!("finished");
+            set_th_finished(true);
+        } else {
+            set_result("".to_string(), "err found".to_string());
+            set_th_crashed(true);
         }
     });
 }

@@ -28,11 +28,11 @@ impl Thread {
 
         Url::create_object_url_with_blob(&blob).unwrap()
     }
-    fn revoke_blob_url(blob_url: String) {
-        Url::revoke_object_url(&blob_url).unwrap();
+    fn revoke_blob_url(blob_url: &str) {
+        Url::revoke_object_url(blob_url).unwrap();
     }
 
-    fn get_worker_content() -> &'static str {
+    const fn get_worker_content() -> &'static str {
         "
         const instantiate = async (abInit, abWasm) => {
             const initJs = new TextDecoder().decode(abInit);
@@ -66,7 +66,7 @@ impl Thread {
         let blob_url = Self::create_blob_url(Self::get_worker_content());
         debug_ln!("blob_url: {}", &blob_url);
         let atw_th = AtwThread::new(&blob_url);
-        Self::revoke_blob_url(blob_url);
+        Self::revoke_blob_url(&blob_url);
 
         Self {
             ab_init: RefCell::new(Some(ab_init)),
@@ -89,7 +89,7 @@ impl Thread {
             .send_request(&payload, Some(&Array::of2(&ab_init, &ab_wasm)))
             .await;
         let result = match result {
-            Ok(_jsv) => "ok", // format!("ok: {}", jsv.as_string().unwrap()),
+            Ok(_jsv) => "ok",   // format!("ok: {}", jsv.as_string().unwrap()),
             Err(_jsv) => "err", // format!("err: {}", jsv.as_string().unwrap()),
         };
         debug_ln!("init() - result: {}", result);

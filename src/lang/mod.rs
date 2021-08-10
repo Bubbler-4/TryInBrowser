@@ -1,7 +1,9 @@
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::module_name_repetitions)]
+mod brainfuck;
 mod deadfish;
 mod example_lang;
 mod s10k;
-mod brainfuck;
 
 pub fn lang_name_list() -> Vec<&'static str> {
     let mut names = vec![s10k::NAME, deadfish::NAME, brainfuck::NAME];

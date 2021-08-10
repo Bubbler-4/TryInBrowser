@@ -20,7 +20,8 @@ fn pass_encode(out: &str, err: &str) -> ResultJJ {
     /* let (out, err) = (JsValue::from(out), JsValue::from(err));
     let jsv = Array::of2(&out, &err).unchecked_into();
     Ok(jsv) */
-    Ok(JsValue::from_serde(&(out, err)).unwrap())
+    //Ok(JsValue::from_serde(&(out, err)).unwrap())
+    JsValue::from_serde(&(out, err)).map_err(|_| JsValue::from(err))
 }
 
 fn err_encode(err: &str) -> ResultJJ {
@@ -32,18 +33,18 @@ fn err_encode(err: &str) -> ResultJJ {
 
 impl LangWriter for AtwThreadWriter {
     fn write_both(&mut self, out: &str, err: &str) {
-        send_result(pass_encode(out, err), self.atw_thw.clone(), true);
+        send_result(&pass_encode(out, err), &self.atw_thw, true);
     }
     fn terminate(&mut self) {
-        send_result(pass_encode("", ""), self.atw_thw.clone(), false);
+        send_result(&pass_encode("", ""), &self.atw_thw, false);
     }
     fn terminate_with_error(&mut self, msg: &str) {
         self.write_err(msg);
-        send_result(err_encode(msg), self.atw_thw.clone(), false);
+        send_result(&err_encode(msg), &self.atw_thw, false);
     }
 }
 
-pub fn send_result(result: ResultJJ, atw_thw: Rc<AtwThreadWorker>, cont: bool) {
+pub fn send_result(result: &ResultJJ, atw_thw: &Rc<AtwThreadWorker>, cont: bool) {
     match result {
         // TODO !!!! optimise transferables cases
         Ok(ref ret) => atw_thw.send_response(ret, None, cont),

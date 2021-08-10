@@ -2,18 +2,18 @@
 
 mod lang;
 mod runner;
-mod thread;
+mod threading;
 
 use indoc::indoc;
 use seed::{prelude::*, *};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
-use thread::prelude::OUT_LIMIT;
+use threading::prelude::OUT_LIMIT;
 use web_sys::window;
 
 fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.after_next_render(Msg::Rendered);
-    runner::runner_init();
+    runner::init();
     let languages_list = lang::lang_name_list();
     let lang_part = url.next_hash_path_part();
     let languages_shown = lang_part.is_none();
@@ -33,8 +33,7 @@ fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
     log!(args);
     Model {
         spinner: 0,
-        thread_ready: false,
-        thread_running: false,
+        thread_state: NotReady,
         stdout: String::with_capacity(OUT_LIMIT),
         stderr: String::with_capacity(OUT_LIMIT + 100),
         lang,
@@ -56,10 +55,17 @@ fn b64_to_string(s: &str) -> String {
     }
 }
 
+#[derive(PartialEq, Eq)]
+enum ThreadState {
+    NotReady,
+    Ready,
+    Running,
+}
+use ThreadState::{NotReady, Ready, Running};
+
 struct Model {
-    spinner: i32,
-    thread_ready: bool,
-    thread_running: bool,
+    spinner: usize,
+    thread_state: ThreadState,
     stdout: String,
     stderr: String,
     lang: String,
@@ -91,63 +97,20 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::Rendered(_) => {
             model.spinner += 1;
-            if !model.thread_ready {
-                model.thread_ready = runner::poll_mt_init();
-            }
-            if model.thread_running {
-                let finished = runner::get_th_finished();
-                let (out, err) = runner::take_result_from_thread();
-                let stdout_overflown = model.stdout.len() + out.len() > OUT_LIMIT;
-                let stderr_overflown = model.stderr.len() + err.len() > OUT_LIMIT;
-                let overflown = stdout_overflown || stderr_overflown;
-                if stdout_overflown {
-                    model
-                        .stdout
-                        .push_str(&out[..OUT_LIMIT - model.stdout.len()]);
-                } else {
-                    model.stdout.push_str(&out);
-                }
-                if stderr_overflown {
-                    model
-                        .stderr
-                        .push_str(&err[..OUT_LIMIT - model.stderr.len()]);
-                } else {
-                    model.stderr.push_str(&err);
-                }
-                if overflown {
-                    runner::reset();
-                }
-                let crashed = runner::get_th_crashed() || overflown;
-                model.thread_running = !crashed && !finished;
-                if crashed || finished {
-                    model.stderr +=
-                        &format!("\n\nElapsed time: {:.6} sec", runner::get_elapsed_time());
-                }
-                if crashed {
-                    model.thread_ready = false;
-                    model.stderr += if overflown {
-                        "\noutput limit exceeded"
-                    } else {
-                        "\ninterpreter crashed"
-                    };
-                } else if finished {
-                    model.stderr += "\nfinished";
-                }
-            }
+            update_state(model);
             orders.after_next_render(Msg::Rendered);
         }
         Msg::Run => {
             log!("Run clicked");
             runner::reset_all_flags();
-            model.thread_running = true;
+            model.thread_state = Running;
             model.stdout.clear();
             model.stderr.clear();
             runner::run(&model.lang, &model.code, &model.stdin, &model.args);
         }
         Msg::Stop => {
             log!("Stop clicked");
-            model.thread_ready = true;
-            model.thread_running = false;
+            model.thread_state = Ready;
             model.stderr += &format!("\n\nElapsed time: {:.6} sec", runner::get_elapsed_time());
             model.stderr += "\naborted";
             runner::reset();
@@ -214,6 +177,52 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     }
 }
 
+fn update_state(model: &mut Model) {
+    if model.thread_state == NotReady && runner::poll_mt_init() {
+        model.thread_state = Ready;
+    }
+    if model.thread_state == Running {
+        let finished = runner::get_th_finished();
+        let (out, err) = runner::take_result_from_thread();
+        let stdout_overflown = model.stdout.len() + out.len() > OUT_LIMIT;
+        let stderr_overflown = model.stderr.len() + err.len() > OUT_LIMIT;
+        let overflown = stdout_overflown || stderr_overflown;
+        if stdout_overflown {
+            model
+                .stdout
+                .push_str(&out[..OUT_LIMIT - model.stdout.len()]);
+        } else {
+            model.stdout.push_str(&out);
+        }
+        if stderr_overflown {
+            model
+                .stderr
+                .push_str(&err[..OUT_LIMIT - model.stderr.len()]);
+        } else {
+            model.stderr.push_str(&err);
+        }
+        if overflown {
+            runner::reset();
+        }
+        let crashed = runner::get_th_crashed() || overflown;
+        if crashed || finished {
+            model.thread_state = Ready;
+        }
+        if crashed || finished {
+            model.stderr += &format!("\n\nElapsed time: {:.6} sec", runner::get_elapsed_time());
+        }
+        if crashed {
+            model.stderr += if overflown {
+                "\noutput limit exceeded"
+            } else {
+                "\ninterpreter crashed"
+            };
+        } else if finished {
+            model.stderr += "\nfinished";
+        }
+    }
+}
+
 fn format_post(
     lang: &str,
     code: &str,
@@ -232,7 +241,11 @@ fn format_post(
     hasher.write_u8(0);
     hasher.write(args.as_bytes());
     let hash = hasher.finish();
-    let display_code = if selection.is_empty() { code } else { selection };
+    let display_code = if selection.is_empty() {
+        code
+    } else {
+        selection
+    };
     format!(
         indoc!(
             r#"
@@ -277,7 +290,7 @@ fn get_selection() -> Option<String> {
 fn view(model: &Model) -> Node<Msg> {
     div![
         IF!(cfg!(feature="ui_debug") => div![
-            "UI health: ", ".".repeat(model.spinner as usize / 10 % 10),
+            "UI health: ", ".".repeat(model.spinner / 10 % 10),
             br![], br![],
         ]),
         b!["Languages"],
@@ -297,15 +310,15 @@ fn view(model: &Model) -> Node<Msg> {
                 .iter()
                 .filter(|&x| model.languages_shown || x == &model.lang)
                 .map(|s| {
-                    let s_clone = s.to_string();
+                    let s_clone = (*s).to_string();
                     div![
                         C![
                             IF!(&model.lang == s => "active"),
                             IF!(&model.lang != s => "inactive"),
-                            IF!(model.thread_running => "disabled")
+                            IF!(model.thread_state == Running => "disabled")
                         ],
                         s,
-                        IF!(!model.thread_running => ev(Ev::Click, move |_| Msg::LangSet(s_clone)))
+                        IF!(model.thread_state != Running => ev(Ev::Click, move |_| Msg::LangSet(s_clone)))
                     ]
                 })
         ],
@@ -334,26 +347,26 @@ fn view(model: &Model) -> Node<Msg> {
         br![],
         button![
             id!("run"),
-            attrs! { At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
+            attrs! { At::Disabled => (model.thread_state != Ready).as_at_value() },
             "Run",
             ev(Ev::Click, |_| Msg::Run)
         ],
         button![
             id!("stop"),
-            attrs! { At::Disabled => (!model.thread_ready || !model.thread_running).as_at_value() },
+            attrs! { At::Disabled => (model.thread_state != Running).as_at_value() },
             "Stop",
             ev(Ev::Click, |_| Msg::Stop)
         ],
         br![],
         button![
             id!("linkify"),
-            attrs! {At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
+            attrs! { At::Disabled => (model.thread_state != Ready).as_at_value() },
             "Linkify",
             ev(Ev::Click, |_| Msg::Linkify)
         ],
         button![
             id!("postify"),
-            attrs! {At::Disabled => (!model.thread_ready || model.thread_running).as_at_value() },
+            attrs! { At::Disabled => (model.thread_state != Ready).as_at_value() },
             "Postify",
             ev(Ev::MouseDown, |_| Msg::Postify)
         ],

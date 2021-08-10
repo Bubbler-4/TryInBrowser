@@ -8,8 +8,8 @@ use web_sys::{MessageEvent, WorkerGlobalScope};
 
 #[allow(dead_code)]
 #[wasm_bindgen]
-pub fn wmt_bootstrap(wgs: WorkerGlobalScope) -> _Worker {
-    let worker = _Worker::new(wgs);
+pub fn wmt_bootstrap(wgs: WorkerGlobalScope) -> _WorkerInner {
+    let worker = _WorkerInner::new(wgs);
     worker
         .atw_thw
         .send_response(&JsValue::from("bootstrap COMPLETE"), None, false);
@@ -18,13 +18,13 @@ pub fn wmt_bootstrap(wgs: WorkerGlobalScope) -> _Worker {
 }
 
 #[wasm_bindgen]
-pub struct _Worker {
+pub struct _WorkerInner {
     atw_thw: Rc<AtwThreadWorker>,
     // Store closures instead of calling `.forget()` which leaks
     _on_message: Box<Closure<dyn FnMut(MessageEvent)>>,
 }
 
-impl _Worker {
+impl _WorkerInner {
     fn new(wgs: WorkerGlobalScope) -> Self {
         let atw_thw = Rc::new(AtwThreadWorker::new(wgs));
 
@@ -48,13 +48,12 @@ impl _Worker {
         let (ref name, ref jsv) = decode_task_msg(task_msg);
         debug_ln!("on_request_inner(): task: {}", name);
 
-        match name.as_str() {
-            "job-lang" => job::run_job_lang(jsv, atw_thw),
-            _ => {
-                let msg = format!("unknown task: {}", name);
-                console_ln!("err: {}", &msg);
-                panic!("{}", msg);
-            }
+        if name == "job-lang" {
+            job::run_job_lang(jsv, atw_thw);
+        } else {
+            let msg = format!("unknown task: {}", name);
+            console_ln!("err: {}", &msg);
+            panic!("{}", msg);
         }
     }
 }

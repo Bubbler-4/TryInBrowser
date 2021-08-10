@@ -1,3 +1,5 @@
+#![allow(clippy::future_not_send)]
+#![allow(clippy::needless_pass_by_value)]
 use js_sys::{ArrayBuffer, Object, Reflect};
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
@@ -21,7 +23,7 @@ macro_rules! console_ln {
 macro_rules! debug_ln {
     ( $( $x:expr ),* ) => {
         if cfg!(debug_assertions) {
-            let mut ln = String::from("👀 ");
+            let mut ln = String::from("\u{1f440} ");
             ln.push_str(&format!( $( $x ),* ));
             web_sys::console::log_1(&ln.into());
         }
