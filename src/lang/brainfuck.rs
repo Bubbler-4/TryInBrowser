@@ -117,19 +117,9 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
                 writer.write_out(&*out.to_string());
             }
             b',' => {
-                match input.next() {
-                    Some(char) => {
-                        tape[pos] = char;
-                    }
-                    None => {
-                        writer.terminate_with_error(
-                            &*format!(
-                                "Error on `,` at index {}: No input left",
-                                ind
-                            )
-                        );
-                        return;
-                    }
+                tape[pos] = match input.next() {
+                    Some(char) => char,
+                    None => 0
                 }
             }
             b'[' => {
