@@ -127,7 +127,7 @@ pub fn interpret<T: LangWriter>(pgm_str: &str, input_str: &str, _args: &str, wri
             b'[' => {
                 if tape[pos] == 0 {
                     //Jump to one command after the end of the loop
-                    ind = loops[&ind] + 1;
+                    ind = loops[&(ind - 1)] + 1;
                 } else {
                     loop_starts.push(ind);
                 }
