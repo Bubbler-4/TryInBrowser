@@ -1,6 +1,6 @@
 #![allow(clippy::wildcard_imports)]
 
-mod lang;
+pub mod lang;
 mod runner;
 mod threading;
 

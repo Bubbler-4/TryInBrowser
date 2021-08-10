@@ -21,7 +21,7 @@ args = ["--port", "${PORT}"]
 
 [tasks.verify]
 description = "Format, lint with Clippy and run tests"
-dependencies = ["fmt", "clippy", "test_h_firefox"]
+dependencies = ["fmt", "clippy", "test_lang"]
 
 # ---- BUILD ----
 
@@ -74,3 +74,8 @@ description = "Run tests. Ex: 'cargo make test firefox'. Test envs: [chrome, fir
 install_crate = { crate_name = "wasm-pack", binary = "wasm-pack", test_arg = "-V" }
 command = "wasm-pack"
 args = ["test", "--${@}"]
+
+[tasks.test_lang]
+description = "Run built-in tests."
+command = "cargo"
+args = ["test", "--test", "lang_test"]

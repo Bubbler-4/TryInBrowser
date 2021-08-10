@@ -1,5 +1,6 @@
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::must_use_candidate)]
 mod brainfuck;
 mod deadfish;
 mod example_lang;
