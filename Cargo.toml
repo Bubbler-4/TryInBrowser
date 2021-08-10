@@ -8,9 +8,14 @@ categories = ["web", "interpreter"]
 license = "MIT"
 readme = "./README.md"
 edition = "2018"
+default-run = "runtib"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "runtib"
+path = "src/bin/runtib.rs"
 
 [dependencies]
 seed = "0.8.0"
