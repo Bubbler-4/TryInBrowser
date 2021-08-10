@@ -39,7 +39,7 @@ impl _Worker {
 
     fn create_onmessage(atw_thw: Rc<AtwThreadWorker>) -> Closure<dyn FnMut(MessageEvent)> {
         Closure::wrap(Box::new(move |me: MessageEvent| {
-            let ref data = me.data();
+            let data = &me.data();
             Self::on_request_inner(atw_thw.clone(), data);
         }) as Box<dyn FnMut(MessageEvent)>)
     }
