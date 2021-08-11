@@ -1,6 +1,6 @@
 use super::atw::ThreadWorker as AtwThreadWorker;
 use super::prelude::*;
-use crate::lang::{interpret, LangWriter};
+use crate::lang::{interpret2, LangWriter};
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
@@ -44,6 +44,10 @@ impl LangWriter for AtwThreadWriter {
     }
 }
 
+pub fn init_thread_impls() {
+    AtwThreadWriter::init_impls();
+}
+
 pub fn send_result(result: &ResultJJ, atw_thw: &Rc<AtwThreadWorker>, cont: bool) {
     match result {
         // TODO !!!! optimise transferables cases
@@ -58,5 +62,5 @@ pub fn run_job_lang(jsv: &JsValue, atw_thw: Rc<AtwThreadWorker>) {
         .unwrap();
     console_ln!("run_job_lang: {} {} {} {}", lang, pgm, input, args);
     let mut writer = AtwThreadWriter::new(atw_thw);
-    interpret(&lang, &pgm, &input, &args, &mut writer);
+    interpret2(&lang, &pgm, &input, &args, &mut writer);
 }

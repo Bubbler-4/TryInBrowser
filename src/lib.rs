@@ -14,7 +14,7 @@ use web_sys::window;
 fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.after_next_render(Msg::Rendered);
     runner::init();
-    let languages_list = lang::lang_name_list();
+    let languages_list = lang::get_lang_names(); // lang::lang_name_list();
     let lang_part = url.next_hash_path_part();
     let languages_shown = lang_part.is_none();
     let lang = lang_part.map_or_else(|| languages_list[0].to_string(), b64_to_string);
@@ -73,7 +73,7 @@ struct Model {
     stdin: String,
     args: String,
     languages_shown: bool,
-    languages_list: Vec<&'static str>,
+    languages_list: &'static Vec<&'static str>,
     url: Url,
     dragging: bool,
     code_selection: String,
@@ -162,7 +162,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             //model.running_text.clear();
             model.stdout.clear();
             model.stdout += &model.url.to_string();
-            let homepage = lang::get_homepage(&model.lang).unwrap_or("");
+            let homepage = lang::get_homepage2(&model.lang).unwrap_or("");
             model.stdout = format_post(
                 &model.lang,
                 &model.code,

@@ -151,6 +151,7 @@ pub fn init() {
         set_mt(mt);
         log!("success 2");
     });
+    init_thread_impls();
 }
 
 pub fn poll_mt_init() -> bool {

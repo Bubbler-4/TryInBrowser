@@ -1,7 +1,7 @@
 use std::io::{self, Read};
 use std::fs::read_to_string;
 use std::env::args;
-use try_in_browser::lang::{interpret, LangWriter};
+use try_in_browser::lang::{interpret2, LangWriter};
 
 struct StdWriter {
 }
@@ -53,5 +53,6 @@ fn main() {
     }
 
     let mut writer = StdWriter::new();
-    interpret(&lang, &pgm, &stdin, &arg, &mut writer);
+    StdWriter::init_impls();
+    interpret2(&lang, &pgm, &stdin, &arg, &mut writer);
 }
