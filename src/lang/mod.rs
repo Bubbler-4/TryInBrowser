@@ -62,6 +62,7 @@ fn init_impls<T: LangWriter>() {
     add_lang!(deadfish);
     add_lang!(brainfuck);
     add_lang!(s10k);
+    names.sort_unstable_by_key(|s| s.to_ascii_lowercase());
 
     if cfg!(feature = "ui_debug") {
         add_lang!(example_lang);
