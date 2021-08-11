@@ -1,6 +1,6 @@
 use indoc::indoc;
 use std::io::Write;
-use try_in_browser::lang::{interpret2, LangWriter};
+use try_in_browser::lang::{interpret, LangWriter};
 
 struct VecWriter {
     stdout: Vec<u8>,
@@ -33,7 +33,7 @@ fn test_s10k() {
     let lang = "S10K";
     let mut writer = VecWriter::new();
     let pgm = "ooo";
-    interpret2(lang, pgm, "", "", &mut writer);
+    interpret(lang, pgm, "", "", &mut writer);
     let (out, err) = writer.raw();
     assert_eq!(out.len(), 10000);
     assert_eq!(err, b"");
@@ -45,7 +45,7 @@ fn test_deadfish() {
     let lang = "Deadfish";
     let mut writer = VecWriter::new();
     let pgm = "ooo";
-    interpret2(lang, pgm, "", "", &mut writer);
+    interpret(lang, pgm, "", "", &mut writer);
     let (out, err) = writer.raw();
     assert_eq!(out, b"0\n0\n0\n");
     assert_eq!(err, b"");
@@ -58,7 +58,7 @@ fn test_deadfish() {
         dddddddddddddddddddddsddoddddddddoiiioddddddoddddddddo
         "#
     );
-    interpret2(lang, pgm, "", "-o", &mut writer);
+    interpret(lang, pgm, "", "-o", &mut writer);
     let (out, err) = writer.raw();
     assert_eq!(out, b"Hello world");
     assert_eq!(err, b"");
@@ -70,28 +70,28 @@ fn test_brainfuck() {
     let lang = "brainfuck";
     let mut writer = VecWriter::new();
     let pgm = ">>>>--<-<<+[+[<+>--->->->-<<<]>]<<--.<++++++.<<-..<<.<+.>>.>>.<<<.+++.>>.>>-.<<<+.";
-    interpret2(lang, pgm, "", "", &mut writer);
+    interpret(lang, pgm, "", "", &mut writer);
     let (out, err) = writer.raw();
     assert_eq!(out, b"Hello, World!");
     assert_eq!(err, b"");
 
     let mut writer = VecWriter::new();
     let pgm = ">>>>>+[-->-[>>+>-----<<]<--<---]>-.>>>+.>>..+++[.>]<<<<.+++.------.<<-.>>>>+.";
-    interpret2(lang, pgm, "", "", &mut writer);
+    interpret(lang, pgm, "", "", &mut writer);
     let (out, err) = writer.raw();
     assert_eq!(out, b"Hello, World!");
     assert_eq!(err, b"");
 
     let mut writer = VecWriter::new();
     let pgm = ",[..,]";
-    interpret2(lang, pgm, "", "", &mut writer);
+    interpret(lang, pgm, "", "", &mut writer);
     let (out, err) = writer.raw();
     assert_eq!(out, b"");
     assert_eq!(err, b"");
 
     let mut writer = VecWriter::new();
     let pgm = ",[..,]";
-    interpret2(lang, pgm, "Hello!", "", &mut writer);
+    interpret(lang, pgm, "Hello!", "", &mut writer);
     let (out, err) = writer.raw();
     assert_eq!(out, b"HHeelllloo!!");
     assert_eq!(err, b"");

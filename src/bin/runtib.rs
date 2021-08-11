@@ -1,13 +1,12 @@
-use std::io::{self, Read};
-use std::fs::read_to_string;
 use std::env::args;
-use try_in_browser::lang::{interpret2, LangWriter};
+use std::fs::read_to_string;
+use std::io::{self, Read};
+use try_in_browser::lang::{interpret, LangWriter};
 
-struct StdWriter {
-}
+struct StdWriter {}
 
 impl StdWriter {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {}
     }
 }
@@ -28,8 +27,10 @@ impl LangWriter for StdWriter {
 
 fn main() {
     let mut args = args();
-    let _ = args.next(); // discard binary name
-    let lang = if let Some(lang) = args.next() { lang } else {
+    let _arg = args.next(); // discard binary name
+    let lang = if let Some(lang) = args.next() {
+        lang
+    } else {
         eprintln!("Error: Missing language name");
         return;
     };
@@ -37,12 +38,16 @@ fn main() {
         println!("Usage: runtib <language> <sourcefile> [arg]");
         return;
     }
-    let file = if let Some(file) = args.next() { file } else {
+    let file = if let Some(file) = args.next() {
+        file
+    } else {
         eprintln!("Error: Missing source filename");
         return;
     };
     let arg = args.next().unwrap_or_default();
-    let pgm = if let Ok(pgm) = read_to_string(&file) { pgm } else {
+    let pgm = if let Ok(pgm) = read_to_string(&file) {
+        pgm
+    } else {
         eprintln!("Error: Error encountered while reading source code");
         return;
     };
@@ -54,5 +59,5 @@ fn main() {
 
     let mut writer = StdWriter::new();
     StdWriter::init_impls();
-    interpret2(&lang, &pgm, &stdin, &arg, &mut writer);
+    interpret(&lang, &pgm, &stdin, &arg, &mut writer);
 }
