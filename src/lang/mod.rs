@@ -135,6 +135,7 @@ pub trait LangWriter: 'static + Sized {
 }
 
 pub fn interpret2<T: LangWriter>(lang: &str, pgm: &str, input: &str, args: &str, writer: &mut T) {
+    T::init_impls();
     if args == "-h" {
         if let Some(help) = get_help2(lang) {
             writer.write_out(help);
