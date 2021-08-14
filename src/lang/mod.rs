@@ -5,6 +5,8 @@ mod brainfuck;
 mod deadfish;
 mod example_lang;
 mod s10k;
+mod slashes;
+
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use typemap::{Key, ShareMap};
@@ -62,6 +64,7 @@ fn init_impls<T: LangWriter>() {
     add_lang!(deadfish);
     add_lang!(brainfuck);
     add_lang!(s10k);
+    add_lang!(slashes);
     names.sort_unstable_by_key(|s| s.to_ascii_lowercase());
 
     if cfg!(feature = "ui_debug") {
