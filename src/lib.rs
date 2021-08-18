@@ -10,6 +10,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 use threading::prelude::OUT_LIMIT;
 use web_sys::window;
+use data_encoding::BASE64URL_NOPAD as BASE64;
 
 fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.after_next_render(Msg::Rendered);
@@ -49,7 +50,7 @@ fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
 }
 
 fn b64_to_string(s: &str) -> String {
-    match base64::decode(s[1..].as_bytes()) {
+    match BASE64.decode(s[1..].as_bytes()) {
         Ok(vec) => String::from_utf8_lossy(&vec).to_string(),
         Err(_) => "<Failed to decode>".to_string(),
     }
@@ -256,6 +257,7 @@ fn format_post(
             ```
 
             [Try in browser!][tib-{4:016x}]
+
             [tib-{0}]: {5}
             [tib-{4:016x}]: https://try-in-browser.netlify.app/#{6}
             "#
@@ -271,10 +273,10 @@ fn format_post(
 }
 
 fn update_url(url: Url, lang: &str, code: &str, input: &str, args: &str) -> Url {
-    let lang = "@".to_string() + &base64::encode(lang);
-    let code = "@".to_string() + &base64::encode(code);
-    let input = "@".to_string() + &base64::encode(input);
-    let args = "@".to_string() + &base64::encode(args);
+    let lang = "@".to_string() + &BASE64.encode(lang.as_bytes());
+    let code = "@".to_string() + &BASE64.encode(code.as_bytes());
+    let input = "@".to_string() + &BASE64.encode(input.as_bytes());
+    let args = "@".to_string() + &BASE64.encode(args.as_bytes());
     let url = url.set_hash_path(&[lang, code, input, args]);
     url.go_and_replace();
     url
