@@ -99,25 +99,33 @@ fn test_brainfuck() {
 
 #[test]
 fn test_slashes() {
-    let tests = [
-        (r#"Hello, world!"#, b"Hello, World!"),
+    let tests: &[(&str, &[u8])] = &[
+        (r#"Hello, world!"#, b"Hello, world!"),
         (
             r#"/ world! world!/Hello,/ world! world! world!"#,
-            b"Hello, World!",
+            b"Hello, world!",
         ),
         (
             r#"/a/\//ab/world!/ab world!/Hello, aworld! bworld!"#,
-            b"Hello, World!",
+            b"Hello, world!",
+        ),
+        (
+            r#"/1/0*//*0/0**//0//100010"#,
+            b"**********************************",
+        ),
+        (
+            r#"/*/>01//1>/1//10/01//011/1\0//01/_1//_///>0/>//>//**********************************"#,
+            b"100010",
         ),
     ];
 
     VecWriter::init_impls();
-    let lang = "Slashes";
+    let lang = "///";
     for (pgm, expected_out) in tests {
         let mut writer = VecWriter::new();
         interpret(lang, pgm, "", "", &mut writer);
         let (out, err) = writer.raw();
-        assert_eq!(out, expected_out);
+        assert_eq!(out, *expected_out);
         assert_eq!(err, b"");
     }
 }

@@ -4,13 +4,13 @@ pub mod lang;
 mod runner;
 mod threading;
 
+use data_encoding::BASE64URL_NOPAD as BASE64;
 use indoc::indoc;
 use seed::{prelude::*, *};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 use threading::prelude::OUT_LIMIT;
 use web_sys::window;
-use data_encoding::BASE64URL_NOPAD as BASE64;
 
 fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.after_next_render(Msg::Rendered);
